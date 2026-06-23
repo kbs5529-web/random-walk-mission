@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>랜덤 산책 미션 생성기 — 화면 갤러리</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+  <style>
+    :root {
+      --pr: #C96845; --prD: #8B3E22; --prL: #F2DACE; --prT: #FDF2EC;
+      --sec: #4E9E78; --secL: #C8E8D8; --secT: #EEF7F3;
+      --acc: #C4972D; --accL: #F2E0A4; --accT: #FBF5E4;
+      --pur: #9B7BB8; --purT: #F1EBF9;
+      --bg: #F8F5F1; --card: #FFFDFB;
+      --surfL: #F2EDE7; --surfM: #EBE5DE; --surfH: #DDD6CE;
+      --txt: #1E1A16; --txtS: #3A2D23; --txtM: #5C4A3F; --txtF: #8C7B73;
+      --out: #D9CECA; --outS: #E8E1DC;
+      --r: 18px; --rs: 12px;
+      --sh-card: 0 2px 16px rgba(120,80,60,0.10), 0 1px 4px rgba(120,80,60,0.06);
+      --sh-sm: 0 1px 8px rgba(120,80,60,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: #E8E3DC; padding: 48px 40px 64px; }
+
+    .gallery-header { text-align: center; margin-bottom: 48px; }
+    .gallery-header h1 { font-size: 28px; font-weight: 800; color: var(--txt); letter-spacing: -0.04em; margin-bottom: 8px; }
+    .gallery-header p { font-size: 14px; color: var(--txtF); font-weight: 500; }
+    .version-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--prT); border: 1px solid var(--prL); border-radius: 99px; padding: 4px 14px; margin-top: 10px; font-size: 11px; font-weight: 700; color: var(--prD); letter-spacing: 0.04em; text-transform: uppercase; }
+
+    .phone-grid { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+    .phone-frame { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .phone-label { font-size: 11px; font-weight: 700; color: var(--txtF); letter-spacing: 0.1em; text-transform: uppercase; }
+    .phone { width: 255px; background: var(--bg); border-radius: 36px; border: 2px solid #C8C0B8; overflow: hidden; box-shadow: 0 8px 40px rgba(80,50,30,0.18), 0 2px 8px rgba(80,50,30,0.10); }
+    .phone-notch-bar { height: 34px; background: var(--bg); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--outS); }
+    .phone-notch { width: 68px; height: 11px; background: #1E1A16; border-radius: 6px; }
+    .phone-screen { padding: 16px 16px 22px; min-height: 500px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+    .pg-title { font-size: 21px; font-weight: 800; text-align: center; color: var(--txt); letter-spacing: -0.03em; line-height: 1.25; }
+    .pg-sub { font-size: 12px; color: var(--txtF); text-align: center; line-height: 1.7; font-weight: 500; margin-top: -2px; }
+    .card-w { background: var(--card); border-radius: var(--r); padding: 14px; border: 1px solid var(--outS); box-shadow: var(--sh-card); width: 100%; }
+    .input-f { width: 100%; padding: 10px 12px; background: var(--surfL); border: 1.5px solid var(--out); border-radius: var(--rs); font-size: 12px; color: var(--txtM); font-family: inherit; }
+    .lbl { font-size: 9px; font-weight: 700; color: var(--txtM); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; display: block; }
+    .eyebrow { font-size: 9px; font-weight: 700; color: var(--txtF); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 9px; display: block; }
+    .btn-p { width: 100%; padding: 11px 14px; background: var(--pr); color: white; border: none; border-radius: var(--r); font-size: 12px; font-weight: 700; font-family: inherit; box-shadow: 0 4px 14px rgba(201,104,69,0.28); }
+    .btn-s { width: 100%; padding: 11px 14px; background: var(--sec); color: white; border: none; border-radius: var(--r); font-size: 12px; font-weight: 700; font-family: inherit; box-shadow: 0 4px 14px rgba(78,158,120,0.22); }
+    .btn-acc { width: 100%; padding: 11px 14px; background: var(--acc); color: white; border: none; border-radius: var(--r); font-size: 12px; font-weight: 700; font-family: inherit; box-shadow: 0 4px 14px rgba(196,151,45,0.28); }
+    .btn-ghost-end { width: 100%; padding: 10px; background: transparent; border: none; font-size: 11px; font-weight: 700; color: var(--txtF); font-family: inherit; }
+    .back-btn { display: inline-flex; align-items: center; gap: 5px; background: var(--surfL); border: 1px solid var(--out); border-radius: 10px; padding: 5px 10px; font-size: 10px; font-weight: 700; color: var(--txtM); align-self: flex-start; font-family: inherit; }
+    .sel-btn { width: 100%; background: var(--card); border: 1px solid var(--outS); border-radius: var(--r); padding: 12px 13px; display: flex; align-items: center; gap: 11px; box-shadow: var(--sh-sm); }
+    .sel-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+    .sel-lbl { font-size: 12px; font-weight: 800; letter-spacing: -0.02em; }
+    .sel-sub { font-size: 10px; color: var(--txtF); font-weight: 500; margin-top: 2px; }
+    .prog-track { background: var(--surfH); border-radius: 99px; height: 5px; overflow: hidden; }
+    .prog-fill { background: var(--pr); height: 5px; border-radius: 99px; }
+    .badge-inner { display: flex; align-items: center; gap: 12px; }
+    .badge-icon { width: 42px; height: 42px; border-radius: 12px; background: var(--prT); display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
+    .stat-cell { background: var(--card); border: 1px solid var(--outS); border-radius: var(--rs); padding: 10px 8px; text-align: center; }
+    .stat-lbl { font-size: 8px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--txtF); margin-bottom: 4px; }
+    .stat-val { font-size: 17px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+    .walk-stat-card { width: 100%; background: var(--card); border-radius: var(--r); padding: 11px 13px; box-shadow: var(--sh-card); border: 1px solid var(--outS); }
+    .walk-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 9px; }
+    .walk-lbl { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--txtF); margin-bottom: 2px; }
+    .walk-val { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+    .mission-item { background: var(--card); border: 1px solid var(--outS); border-radius: var(--r); padding: 10px 12px; width: 100%; display: flex; align-items: center; gap: 9px; box-shadow: var(--sh-sm); }
+    .mission-done { background: var(--secT); border-color: var(--secL); opacity: 0.8; }
+    .check-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--out); flex-shrink: 0; }
+    .check-done { background: var(--sec); border-color: var(--sec); display: flex; align-items: center; justify-content: center; }
+    .check-done::after { content: ''; width: 6px; height: 4px; border-left: 2px solid white; border-bottom: 2px solid white; transform: rotate(-45deg) translateY(-1px); }
+    .chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 99px; font-size: 9px; font-weight: 700; }
+    .chip-self { background: var(--secT); color: #2A6E50; }
+    .chip-photo { background: var(--prT); color: var(--prD); }
+    .room-code-big { font-size: 36px; font-weight: 800; letter-spacing: 10px; color: var(--pr); text-align: center; padding: 4px 0; }
+    .lobby-badge { display: inline-flex; align-items: center; gap: 7px; background: var(--accT); border: 1.5px solid var(--accL); border-radius: 10px; padding: 5px 14px; }
+    .member-row { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid var(--outS); }
+    .member-row:last-child { border-bottom: none; }
+    .member-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .card-surface { background: var(--surfL); border-radius: var(--r); padding: 12px 14px; width: 100%; border: 1.5px solid var(--out); display: flex; align-items: flex-start; gap: 11px; }
+    .ranking-row { display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px solid var(--outS); }
+    .ranking-row:last-child { border-bottom: none; }
+    .rank-num { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; flex-shrink: 0; }
+    .app-mark { width: 64px; height: 64px; background: var(--prT); border-radius: 20px; border: 1px solid var(--prL); display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 4px; box-shadow: 0 4px 16px rgba(201,104,69,0.18); }
+
+    .section-divider { width: 100%; display: flex; align-items: center; gap: 16px; margin: 40px 0 32px; }
+    .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: #C8C0B8; }
+    .section-divider span { font-size: 11px; font-weight: 700; color: var(--txtF); letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+<div class="gallery-header">
+  <h1>랜덤 산책 미션 생성기</h1>
+  <p>Warm &amp; Whimsical Expedition v2 — 전체 화면 시안</p>
+  <div class="version-tag">2026 · Design v2</div>
+</div>
+
+<!-- Solo 플로우 -->
+<div class="section-divider"><span>Solo 플로우</span></div>
+<div class="phone-grid">
+
+  <!-- 01 환영 -->
+  <div class="phone-frame">
+    <div class="phone">
+      <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+      <div class="phone-screen">
+        <div style="display:flex;flex-direction:column;align-items:center;padding:6px 0 2px;">
+          <div class="app-mark">🗺️</div>
+          <h1 class="pg-title">랜덤 산책<br>미션 생성기</h1>
+          <p class="pg-sub">산책을 게임으로 바꿔드려요<br>미션을 완수하며 동네를 탐험하세요</p>
+        </div>
+        <div class="card-w" style="display:flex;flex-direction:column;gap:9px;">
+          <div>
+            <span class="lbl">닉네임</span>
+            <div class="input-f">산책왕김철수</div>
+          </div>
+          <div>
+            <span class="lbl">ChatGPT API 키 <span style="font-weight:500;text-transform:none;">(선택)</span></span>
+            <div class="input-f" style="color:var(--txtF);">sk-...</div>
+          </div>
+          <button class="btn-p">시작하기</button>
+        </div>
+        <div class="card-w">
+          <span class="eyebrow">나의 누적 기록</span>
+          <div class="badge-inner">
+            <div class="badge-icon">🌱</div>
+            <div style="flex:1;min-width:0;">
+              <p style="font-size:13px;font-weight:800;color:var(--txt);letter-spacing:-0.02em;margin-bottom:2px;">새싹 탐험가</p>
+              <p style="font-size:10px;color:var(--txtF);">총 0.0km · 다음 등급까지 50.0km</p>
+              <div class="prog-track" style="margin-top:6px;"><div class="prog-fill" style="width:0%;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="phone-label">01 환영</span>
+  </div>
+
+  <!-- 02 모드 선택 -->
+  <div class="phone-frame">
+    <div class="phone">
+      <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+      <div class="phone-screen">
+        <button class="back-btn"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+        <div style="text-align:center;margin-top:6px;">
+          <div style="font-size:46px;line-height:1;margin-bottom:8px;">👣</div>
+          <h1 class="pg-title">어떻게 걸을까요?</h1>
+          <p class="pg-sub">혼자서 조용히, 혹은<br>친구들과 신나게!</p>
+        </div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
+          <div class="sel-btn" style="border-left:4px solid var(--pr);">
+            <div class="sel-icon" style="background:var(--prT);">🧍</div>
+            <div>
+              <div class="sel-lbl" style="color:var(--prD);">혼자 걷기</div>
+              <div class="sel-sub">자기 선언으로 미션 완료</div>
+            </div>
+          </div>
+          <div class="sel-btn" style="border-left:4px solid var(--sec);">
+            <div class="sel-icon" style="background:var(--secT);">👫</div>
+            <div>
+              <div class="sel-lbl" style="color:#2A5E44;">함께 걷기</div>
+              <div class="sel-sub">사진 인증 · 랭킹 경쟁</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="phone-label">02 모드 선택</span>
+  </div>
+
+  <!-- 03 난이도 -->
+  <div class="phone-frame">
+    <div class="phone">
+      <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+      <div class="phone-screen">
+        <button class="back-btn"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+        <div style="text-align:center;margin-top:6px;">
+          <div style="font-size:46px;line-height:1;margin-bottom:8px;">⚡</div>
+          <h1 class="pg-title">난이도 선택</h1>
+          <p class="pg-sub">미션 개수를 선택하세요</p>
+        </div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
+          <div class="sel-btn" style="border-left:4px solid var(--sec);">
+            <div class="sel-icon" style="background:var(--secT);">😊</div>
+            <div>
+              <div class="sel-lbl" style="color:#2A5E44;">쉬움 - 미션 3개</div>
+              <div class="sel-sub">가볍게 동네 한 바퀴</div>
+            </div>
+          </div>
+          <div class="sel-btn" style="border-left:4px solid var(--pr);">
+            <div class="sel-icon" style="background:var(--prT);">😤</div>
+            <div>
+              <div class="sel-lbl" style="color:var(--prD);">보통 - 미션 5개</div>
+              <div class="sel-sub">적당히 땀 흘리기</div>
+            </div>
+          </div>
+          <div class="sel-btn" style="border-left:4px solid #A85136;">
+            <div class="sel-icon" style="background:#F9EDE8;">🔥</div>
+            <div>
+              <div class="sel-lbl" style="color:#6B2E1A;">어려움 - 미션 10개</div>
+              <div class="sel-sub">진정한 탐험가의 도전</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="phone-label">03 난이도</span>
+  </div>
+
+  <!-- 04 미션 방식 -->
+  <div class="phone-frame">
+    <div class="phone">
+      <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+      <div class="phone-screen">
+        <button class="back-btn"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+        <div style="text-align:center;margin-top:6px;">
+          <div style="font-size:46px;line-height:1;margin-bottom:8px;">🎲</div>
+          <h1 class="pg-title">미션 생성 방식</h1>
+          <p class="pg-sub">어떻게 미션을 받을까요?</p>
+        </div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
+          <div class="sel-btn" style="border-left:4px solid var(--pr);">
+            <div class="sel-icon" style="background:var(--prT);">🎲</div>
+            <div>
+              <div class="sel-lbl" style="color:var(--prD);">랜덤 뽑기</div>
+              <div class="sel-sub">50개 미션에서 무작위 선택</div>
+            </div>
+          </div>
+          <div class="sel-btn" style="border-left:4px solid var(--sec);">
+            <div class="sel-icon" style="background:var(--secT);">🤖</div>
+            <div>
+              <div class="sel-lbl" style="color:#2A5E44;">AI 미션</div>
+              <div class="sel-sub">ChatGPT가 내 동네 맞춤 미션 생성</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="phone-label">04 미션 방식</span>
+  </div>
+
+  <!-- 05 산책 중 -->
+  <div class="phone-frame">
+    <div class="phone">
+      <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+      <div class="phone-screen" style="gap:8px;">
+        <div class="walk-stat-card">
+          <div class="walk-row">
+            <div>
+              <div class="walk-lbl">이동 거리</div>
+              <div class="walk-val" style="color:var(--pr);">1.24 km</div>
+            </div>
+            <div style="text-align:center;">
+              <p style="font-size:10px;font-weight:700;color:var(--txtM);">안녕, 산책왕!</p>
+              <p style="font-size:10px;color:var(--txtF);margin-top:1px;">2 / 5 완료</p>
+            </div>
+            <div style="text-align:right;">
+              <div class="walk-lbl">경과 시간</div>
+              <div class="walk-val" style="color:var(--sec);">18:42</div>
+            </div>
+          </div>
+          <div class="prog-track" style="height:6px;"><div class="prog-fill" style="width:40%;height:6px;"></div></div>
+        </div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:7px;">
+          <div class="mission-item mission-done">
+            <div class="check-circle check-done"></div>
+            <div>
+              <p style="font-size:12px;font-weight:700;color:var(--txtM);text-decoration:line-through;">빨간 간판 5개 찾기</p>
+              <span class="chip chip-self" style="margin-top:3px;display:inline-flex;">✋ 자기 선언</span>
+            </div>
+          </div>
+          <div class="mission-item mission-done">
+            <div class="check-circle check-done"></div>
+            <div>
+              <p style="font-size:12px;font-weight:700;color:var(--txtM);text-decoration:line-through;">강아지 3마리 보기</p>
+              <span class="chip chip-self" style="margin-top:3px;display:inline-flex;">✋ 자기 선언</span>
+            </div>
+          </div>
+          <div class="mission-item"><div class="check-circle"></div><p style="font-size:12px;font-weight:700;color:var(--txt);">하늘 사진 찍기</p></div>
+          <div class="mission-item"><div class="check-circle"></div><p style="font-size:12px;font-weight:700;color:var(--txt);">편의점 2곳 찾기</p></div>
+          <div class="mission-item"><div class="check-circle"></div><p style="font-size:12px;font-weight:700;color:var(--txt);">나무 10그루 지나가기</p></div>
+        </div>
+        <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+          <button style="padding:9px 12px;background:var(--card);border:1px solid var(--out);border-radius:var(--r);font-size:11px;font-weight:700;color:var(--txtM);font-family:inherit;">취소</button>
+          <button class="btn-acc" style="flex:1;padding:9px 0;font-size:12px;">산책 종료하기</button>
+        </div>
+      </div>
+    </div>
+    <span class="phone-label">05 산책 중</span>
+  </div>
+
+  <!-- 06 결과 -->
+  <div class="phone-frame">
+    <div class="phone">
+      <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+      <div class="phone-screen">
+        <div style="text-align:center;margin-top:10px;margin-bottom:2px;">
+          <div style="font-size:60px;line-height:1;margin-bottom:8px;">🌱</div>
+          <h1 class="pg-title">새싹 탐험가</h1>
+          <p class="pg-sub">산책 완료! 2.4km를 걸었어요</p>
+        </div>
+        <div class="card-w" style="padding:12px;">
+          <div class="stat-grid">
+            <div class="stat-cell"><div class="stat-lbl">이동 거리</div><div class="stat-val" style="color:var(--pr);">2.4km</div></div>
+            <div class="stat-cell"><div class="stat-lbl">소요 시간</div><div class="stat-val" style="color:var(--sec);">32:18</div></div>
+            <div class="stat-cell"><div class="stat-lbl">완료 미션</div><div class="stat-val" style="color:var(--acc);">4 / 5</div></div>
+            <div class="stat-cell"><div class="stat-lbl">누적 거리</div><div class="stat-val" style="color:var(--pur);">2.4km</div></div>
+          </div>
+        </div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:7px;">
+          <button class="btn-p" style="font-size:12px;">결과 공유하기</button>
+          <button class="btn-s" style="font-size:12px;">다시 산책하기</button>
+          <button class="btn-ghost-end">처음으로</button>
+        </div>
+      </div>
+    </div>
+    <span class="phone-label">06 결과</span>
+  </div>
+
+</div>
+
+<!-- Group 플로우 -->
+<div class="section-divider"><span>Group 플로우</span></div>
+<div class="phone-grid">
+
+  <!-- 07 방 코드 -->
+  <div class="phone-frame">
+    <div class="phone">
+      <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+      <div class="phone-screen">
+        <button class="back-btn"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+        <div style="text-align:center;margin-top:6px;">
+          <div style="font-size:46px;line-height:1;margin-bottom:8px;">🚪</div>
+          <h1 class="pg-title">함께 걷기</h1>
+          <p class="pg-sub">4자리 코드로 친구를 초대하세요</p>
+        </div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
+          <div class="card-w" style="display:flex;flex-direction:column;gap:8px;">
+            <span class="eyebrow" style="margin-bottom:0;">새 방 만들기</span>
+            <button class="btn-p">방 만들기</button>
+            <div style="text-align:center;padding:4px 0;">
+              <p style="font-size:10px;color:var(--txtM);margin-bottom:6px;font-weight:600;">친구에게 이 코드를 알려주세요</p>
+              <div class="room-code-big">4782</div>
+              <button class="btn-acc" style="margin-top:12px;font-size:12px;">대기실로 <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+            </div>
+          </div>
+          <div class="card-w" style="display:flex;flex-direction:column;gap:8px;">
+            <span class="eyebrow" style="margin-bottom:0;">코드로 입장</span>
+            <div class="input-f" style="text-align:center;font-size:24px;font-weight:800;letter-spacing:8px;color:var(--pr);">4782</div>
+            <button class="btn-s">입장하기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="phone-label">07 방 코드</span>
+  </div>
+
+  <!-- 08 대기실 -->
+  <div class="phone-frame">
+    <div class="phone">
+      <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+      <div class="phone-screen">
+        <button class="back-btn"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+        <div style="text-align:center;margin-top:6px;">
+          <div style="font-size:46px;line-height:1;margin-bottom:6px;">⏳</div>
+          <h1 class="pg-title">방 대기실</h1>
+          <div class="lobby-badge" style="margin:6px 0;">
+            <span style="font-size:9px;font-weight:700;color:var(--txtF);letter-spacing:0.06em;text-transform:uppercase;">방 코드</span>
+            <span style="font-size:15px;font-weight:800;letter-spacing:5px;color:var(--acc);">4782</span>
+          </div>
+          <p class="pg-sub" style="margin-bottom:0;">친구들이 입장하면 함께 시작해요</p>
+        </div>
+        <div class="card-w" style="display:flex;flex-direction:column;gap:4px;">
+          <span class="eyebrow">참여 멤버</span>
+          <div class="member-row">
+            <div class="member-avatar" style="background:var(--prT);">👑</div>
+            <div style="flex:1;"><p style="font-size:12px;font-weight:700;color:var(--txt);">산책왕김철수</p><p style="font-size:9px;color:var(--txtF);">방장</p></div>
+            <span style="font-size:9px;font-weight:700;color:var(--sec);">준비</span>
+          </div>
+          <div class="member-row">
+            <div class="member-avatar" style="background:var(--secT);">🧑</div>
+            <div style="flex:1;"><p style="font-size:12px;font-weight:700;color:var(--txt);">달리기이영희</p></div>
+            <span style="font-size:9px;font-weight:700;color:var(--acc);">대기 중</span>
+          </div>
+        </div>
+        <div class="card-surface">
+          <div style="width:34px;height:34px;border-radius:10px;background:var(--accT);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🏆</div>
+          <div>
+            <p style="font-size:12px;font-weight:800;color:var(--txt);margin-bottom:3px;">경쟁 모드</p>
+            <p style="font-size:10px;color:var(--txtM);line-height:1.6;">이동 거리 + 미션 완수 시간으로 순위를 겨뤄요</p>
+          </div>
+        </div>
+        <button class="btn-p" style="font-size:12px;">난이도 선택하고 시작하기</button>
+      </div>
+    </div>
+    <span class="phone-label">08 대기실</span>
+  </div>
+
+  <!-- 09 그룹 결과 -->
+  <div class="phone-frame">
+    <div class="phone">
+      <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+      <div class="phone-screen">
+        <div style="text-align:center;margin-top:10px;margin-bottom:2px;">
+          <div style="font-size:60px;line-height:1;margin-bottom:8px;">🌱</div>
+          <h1 class="pg-title">함께 산책 완료!</h1>
+          <p class="pg-sub">모두 수고했어요</p>
+        </div>
+        <div class="card-w" style="padding:12px;">
+          <div class="stat-grid">
+            <div class="stat-cell"><div class="stat-lbl">이동 거리</div><div class="stat-val" style="color:var(--pr);">2.1km</div></div>
+            <div class="stat-cell"><div class="stat-lbl">소요 시간</div><div class="stat-val" style="color:var(--sec);">28:14</div></div>
+            <div class="stat-cell"><div class="stat-lbl">완료 미션</div><div class="stat-val" style="color:var(--acc);">5 / 5</div></div>
+            <div class="stat-cell"><div class="stat-lbl">누적 거리</div><div class="stat-val" style="color:var(--pur);">4.5km</div></div>
+          </div>
+        </div>
+        <div class="card-w">
+          <span class="eyebrow">이번 산책 랭킹</span>
+          <div class="ranking-row">
+            <div class="rank-num" style="background:var(--accT);color:var(--acc);">1</div>
+            <div style="flex:1;"><p style="font-size:12px;font-weight:800;color:var(--txt);">산책왕김철수</p></div>
+            <p style="font-size:10px;color:var(--txtF);">2.1km · 5/5</p>
+          </div>
+          <div class="ranking-row">
+            <div class="rank-num" style="background:var(--surfL);color:var(--txtM);">2</div>
+            <div style="flex:1;"><p style="font-size:12px;font-weight:700;color:var(--txt);">달리기이영희</p></div>
+            <p style="font-size:10px;color:var(--txtF);">1.8km · 4/5</p>
+          </div>
+        </div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:7px;">
+          <button class="btn-p" style="font-size:12px;">결과 공유하기</button>
+          <button class="btn-s" style="font-size:12px;">다시 산책하기</button>
+        </div>
+      </div>
+    </div>
+    <span class="phone-label">09 그룹 결과</span>
+  </div>
+
+</div>
+
+<div style="text-align:center;margin-top:56px;padding-top:24px;border-top:1px solid #C8C0B8;">
+  <p style="font-size:12px;color:var(--txtF);font-weight:500;">랜덤 산책 미션 생성기 · Warm &amp; Whimsical Expedition v2 · 2026</p>
+</div>
+
+</body>
+</html>

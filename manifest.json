@@ -1,0 +1,27 @@
+{
+  "name": "랜덤 산책 미션 생성기",
+  "short_name": "산책미션",
+  "description": "산책을 게임으로 바꿔드려요. 미션을 완수하며 동네를 탐험하세요.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8F5F1",
+  "theme_color": "#C96845",
+  "lang": "ko",
+  "categories": ["health", "fitness", "games"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

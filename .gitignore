@@ -1,0 +1,15 @@
+# 개발 도구
+node_modules/
+.env
+.env.local
+
+# 세션/내부 파일
+session5/
+skills-lock.json
+superpowers/
+AI메모.txt
+*.png
+
+# OS
+.DS_Store
+Thumbs.db

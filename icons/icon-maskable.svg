@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- maskable: 배경이 꽉 차야 함, 아이콘은 중앙 80% 안에 위치 -->
+  <rect width="512" height="512" fill="#C96845"/>
+  <!-- 왼쪽 발자국 (중앙 80% 안으로 조금 축소) -->
+  <g transform="translate(185,300) rotate(-20)" fill="white" opacity="0.95">
+    <ellipse cx="0" cy="0" rx="36" ry="60"/>
+    <circle cx="-28" cy="-72" r="12"/>
+    <circle cx="-12" cy="-81" r="11"/>
+    <circle cx="5"   cy="-83" r="10"/>
+    <circle cx="21"  cy="-76" r="10"/>
+    <circle cx="33"  cy="-63" r="9"/>
+  </g>
+  <!-- 오른쪽 발자국 -->
+  <g transform="translate(310,205) rotate(20) scale(-1,1)" fill="white" opacity="0.95">
+    <ellipse cx="0" cy="0" rx="36" ry="60"/>
+    <circle cx="-28" cy="-72" r="12"/>
+    <circle cx="-12" cy="-81" r="11"/>
+    <circle cx="5"   cy="-83" r="10"/>
+    <circle cx="21"  cy="-76" r="10"/>
+    <circle cx="33"  cy="-63" r="9"/>
+  </g>
+</svg>

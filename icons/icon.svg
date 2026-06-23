@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#C96845"/>
+  <!-- 왼쪽 발자국 -->
+  <g transform="translate(175,295) rotate(-20)" fill="white" opacity="0.95">
+    <ellipse cx="0" cy="0" rx="42" ry="70"/>
+    <circle cx="-32" cy="-84" r="14"/>
+    <circle cx="-14" cy="-94" r="13"/>
+    <circle cx="6"   cy="-96" r="12"/>
+    <circle cx="24"  cy="-88" r="12"/>
+    <circle cx="38"  cy="-74" r="11"/>
+  </g>
+  <!-- 오른쪽 발자국 (좌우 반전) -->
+  <g transform="translate(322,192) rotate(20) scale(-1,1)" fill="white" opacity="0.95">
+    <ellipse cx="0" cy="0" rx="42" ry="70"/>
+    <circle cx="-32" cy="-84" r="14"/>
+    <circle cx="-14" cy="-94" r="13"/>
+    <circle cx="6"   cy="-96" r="12"/>
+    <circle cx="24"  cy="-88" r="12"/>
+    <circle cx="38"  cy="-74" r="11"/>
+  </g>
+</svg>

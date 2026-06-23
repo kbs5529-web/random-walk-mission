@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>🗺️ 랜덤 산책 미션</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#C96845">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="산책미션">
+  <link rel="apple-touch-icon" href="icons/icon.svg" id="pwa-apple-icon">
+  <style>
+    :root {
+      /* 채도 조절된 팔레트 — 더 자연스럽고 세련된 톤 */
+      --primary: #C96845;          /* 테라코타 — 기존 FF8C69보다 깊고 earthy */
+      --primary-deep: #8B3E22;
+      --primary-light: #F2DACE;
+      --primary-shadow: rgba(201,104,69,0.18);
+      --primary-tint: #FDF2EC;
+
+      --secondary: #4E9E78;        /* 세이지 그린 — 기존 7BC8A4보다 차분 */
+      --secondary-light: #C8E8D8;
+      --secondary-tint: #EEF7F3;
+
+      --accent: #C4972D;           /* 앰버 골드 — 기존 FFD93D보다 성숙 */
+      --accent-light: #F2E0A4;
+      --accent-tint: #FBF5E4;
+
+      --purple: #9B7BB8;           /* 더스티 라벤더 */
+      --purple-tint: #F1EBF9;
+
+      /* 서피스 — 덜 노란, 더 중립적인 크림 */
+      --bg: #F8F5F1;
+      --surface: #F8F5F1;
+      --surface-low: #F2EDE7;
+      --surface-mid: #EBE5DE;
+      --surface-high: #DDD6CE;
+      --card: #FFFDFB;
+
+      /* 텍스트 */
+      --text: #1E1A16;
+      --text-soft: #3A2D23;
+      --text-muted: #5C4A3F;
+      --text-faint: #8C7B73;
+
+      /* 보더 */
+      --outline: #D9CECA;
+      --outline-soft: #E8E1DC;
+
+      /* 형태 */
+      --radius: 18px;
+      --radius-sm: 12px;
+      --radius-pill: 999px;
+
+      /* 그림자 — tinted, not black */
+      --shadow-card: 0 2px 16px rgba(120,80,60,0.10), 0 1px 4px rgba(120,80,60,0.06);
+      --shadow-sm: 0 1px 8px rgba(120,80,60,0.08);
+      --shadow-lift: 0 6px 24px rgba(201,104,69,0.16);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      /* iOS 노치/홈바 여백 */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    section {
+      display: none; flex-direction: column; align-items: center;
+      min-height: 100vh; padding: 28px 22px 88px;
+      padding-bottom: calc(88px + env(safe-area-inset-bottom));
+      max-width: 430px; margin: 0 auto;
+    }
+
+    /* ── 스크린 전환 ── */
+    @keyframes screenIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    section[style*="flex"] { animation: screenIn 0.24s cubic-bezier(0.22, 1, 0.36, 1); }
+
+    /* ── 버튼 ── */
+    .btn {
+      width: 100%; padding: 15px 20px; border: none; border-radius: var(--radius);
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.15s ease, opacity 0.12s;
+      line-height: 1.4; font-family: inherit; letter-spacing: -0.01em;
+    }
+    .btn:active { transform: scale(0.96) translateY(1px); opacity: 0.9; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 14px var(--primary-shadow), 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .btn-primary:hover { box-shadow: var(--shadow-lift); }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: white;
+      box-shadow: 0 4px 14px rgba(78,158,120,0.22), 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .btn-accent {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 14px rgba(196,151,45,0.28);
+    }
+    .btn-outline {
+      background: var(--card);
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 13px;
+      padding: 8px 2px;
+      width: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      letter-spacing: 0;
+    }
+    .btn-ghost:active { opacity: 0.6; transform: none; }
+    .btn-hard { background: #A85136; color: white; box-shadow: 0 4px 14px rgba(168,81,54,0.28); }
+
+    /* ── 카드 ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--outline-soft);
+      width: 100%;
+    }
+    .card-surface {
+      background: var(--surface-low);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      width: 100%;
+      border: 1.5px solid var(--outline);
+    }
+
+    /* ── 타이포그래피 ── */
+    .page-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-align: center;
+      line-height: 1.25;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+    .page-sub {
+      font-size: 14px;
+      color: var(--text-faint);
+      text-align: center;
+      margin-bottom: 28px;
+      line-height: 1.75;
+      font-weight: 500;
+    }
+
+    /* ── 입력 ── */
+    input[type="text"], input[type="number"] {
+      width: 100%; padding: 14px 16px;
+      border: 1.5px solid var(--outline);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      background: var(--surface-low);
+      color: var(--text); outline: none;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    input:focus {
+      border-color: var(--primary);
+      background: var(--card);
+      box-shadow: 0 0 0 3px var(--primary-tint);
+    }
+
+    /* ── 유틸 ── */
+    .gap-10 { display: flex; flex-direction: column; gap: 10px; }
+    .gap-12 { display: flex; flex-direction: column; gap: 12px; }
+    .gap-16 { display: flex; flex-direction: column; gap: 16px; }
+
+    /* 큰 이모지 — 크기 줄임, 더 절제된 */
+    .emoji-big { font-size: 52px; margin-bottom: 12px; text-align: center; line-height: 1; }
+
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+    .chip-photo { background: var(--primary-tint); color: var(--primary-deep); }
+    .chip-self  { background: var(--secondary-tint); color: #2A6E50; }
+
+    .label {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      margin-bottom: 7px; display: block;
+      letter-spacing: 0.06em; text-transform: uppercase;
+    }
+
+    /* ── 섹션 소제목 (카드 내 작은 레이블) ── */
+    .section-eyebrow {
+      font-size: 10px; font-weight: 700; color: var(--text-faint);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    /* ── 애니메이션 ── */
+    @keyframes spin    { to { transform: rotate(360deg); } }
+    @keyframes pop     { 0%{transform:scale(1)} 45%{transform:scale(1.22)} 100%{transform:scale(1)} }
+    @keyframes fadeIn  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .animate-pop { animation: pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .fade-in     { animation: fadeIn 0.25s ease; }
+    .spinning    { animation: spin 1s linear infinite; display: inline-block; }
+
+    /* ── 환영 화면 배지 카드 ── */
+    .badge-card {
+      width: 100%;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      border: 1px solid var(--outline-soft);
+      box-shadow: var(--shadow-card);
+    }
+    .badge-card-inner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .badge-icon-wrap {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: var(--primary-tint);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; flex-shrink: 0;
+    }
+
+    /* 배지 진행 바 */
+    .progress-track-thin {
+      background: var(--surface-high); border-radius: 99px; height: 5px; overflow: hidden; margin-top: 8px;
+    }
+    .progress-fill-thin {
+      background: var(--primary);
+      height: 5px; border-radius: 99px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── 선택 버튼 — 화이트 카드 + 왼쪽 액센트 ── */
+    .select-btn {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--outline-soft);
+      border-left: 4px solid transparent;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      cursor: pointer; text-align: left;
+      font-family: inherit;
+      transition: transform 0.1s, box-shadow 0.15s, border-color 0.15s;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+    .select-btn:active { transform: scale(0.975) translateY(1px); }
+    .select-btn:hover { box-shadow: var(--shadow-card); }
+
+    .select-btn-icon {
+      font-size: 28px; flex-shrink: 0;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 12px;
+    }
+    .select-btn-label { font-size: 15px; font-weight: 800; line-height: 1.3; letter-spacing: -0.02em; }
+    .select-btn-sub   { font-size: 12px; font-weight: 500; margin-top: 3px; color: var(--text-faint); }
+
+    /* 선택 버튼 색상 변형 */
+    .select-primary { border-left-color: var(--primary); }
+    .select-primary .select-btn-icon { background: var(--primary-tint); }
+    .select-primary .select-btn-label { color: var(--primary-deep); }
+
+    .select-secondary { border-left-color: var(--secondary); }
+    .select-secondary .select-btn-icon { background: var(--secondary-tint); }
+    .select-secondary .select-btn-label { color: #2A5E44; }
+
+    .select-hard { border-left-color: #A85136; }
+    .select-hard .select-btn-icon { background: #F9EDE8; }
+    .select-hard .select-btn-label { color: #6B2E1A; }
+
+    /* ── 산책 중 상태바 ── */
+    .walk-status-card {
+      width: 100%;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--outline-soft);
+      margin-bottom: 14px;
+      position: sticky;
+      top: 12px;
+      z-index: 10;
+    }
+    .walk-stat-row {
+      display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px;
+    }
+    .walk-stat-label {
+      font-size: 10px; font-weight: 700; color: var(--text-faint);
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 3px;
+    }
+    .walk-stat-value {
+      font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -0.03em;
+    }
+    .progress-track {
+      background: var(--surface-high); border-radius: 99px; height: 7px; overflow: hidden;
+    }
+    .progress-fill {
+      background: var(--primary);        /* 단색 — 그라디언트 AI 티 제거 */
+      height: 7px; border-radius: 99px;
+      transition: width 0.4s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ── 미션 카드 ── */
+    /* ── 미션 체크 원 ── */
+    .mission-check {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--outline);
+      flex-shrink: 0; margin-top: 2px;
+      transition: background 0.18s, border-color 0.18s;
+    }
+    .mission-check.checked {
+      background: var(--secondary);
+      border-color: var(--secondary);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mission-check.checked::after {
+      content: '';
+      width: 7px; height: 5px;
+      border-left: 2px solid white;
+      border-bottom: 2px solid white;
+      transform: rotate(-45deg) translateY(-1px);
+    }
+
+    .mission-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--outline-soft);
+      width: 100%;
+      transition: border-color 0.2s, opacity 0.2s;
+    }
+    .mission-card.done {
+      border-color: var(--secondary-light);
+      background: var(--secondary-tint);
+      opacity: 0.72;
+    }
+
+    /* ── 결과 통계 그리드 ── */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-cell {
+      border-radius: var(--radius-sm);
+      padding: 16px 12px;
+      text-align: center;
+      background: var(--card);
+      border: 1px solid var(--outline-soft);
+    }
+    .stat-cell-label {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      margin-bottom: 7px; color: var(--text-faint);
+    }
+    .stat-cell-value { font-size: 22px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+    .stat-orange .stat-cell-value  { color: var(--primary); }
+    .stat-mint   .stat-cell-value  { color: var(--secondary); }
+    .stat-yellow .stat-cell-value  { color: var(--accent); }
+    .stat-purple .stat-cell-value  { color: var(--purple); }
+
+    /* ── 방코드 큰 숫자 ── */
+    .room-code-big {
+      font-size: 52px; font-weight: 800; letter-spacing: 10px;
+      color: var(--primary); line-height: 1; text-align: center;
+      padding: 8px 0;
+    }
+
+    /* ── 뒤로 버튼 ── */
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface-low);
+      border: 1px solid var(--outline);
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-size: 12px; font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer; font-family: inherit;
+      transition: background 0.15s;
+      align-self: flex-start;
+      margin-bottom: 4px;
+    }
+    .back-btn:active { background: var(--surface-high); }
+
+    /* ── 웰컴 앱 아이덴티티 ── */
+    .app-identity {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 24px 0 8px; width: 100%;
+    }
+    .app-mark {
+      width: 72px; height: 72px;
+      background: var(--primary-tint);
+      border-radius: 22px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; margin-bottom: 16px;
+      border: 1px solid var(--primary-light);
+      box-shadow: 0 4px 16px var(--primary-shadow);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== 환영 화면 ===== -->
+<section id="screen-welcome">
+  <div class="app-identity">
+    <div class="app-mark">🗺️</div>
+    <h1 class="page-title">랜덤 산책<br>미션 생성기</h1>
+    <p class="page-sub">산책을 게임으로 바꿔드려요<br>미션을 완수하며 동네를 탐험하세요</p>
+  </div>
+  <button id="pwa-install-btn" onclick="triggerInstall()" style="display:none; align-items:center; gap:8px; background:var(--secondary-tint); border:1.5px solid var(--secondary-light); color:var(--secondary); font-size:13px; font-weight:700; padding:10px 18px; border-radius:var(--radius-pill); cursor:pointer; margin-bottom:4px; width:100%; justify-content:center;">
+    <i class="ti ti-device-mobile-down" style="font-size:16px;"></i> 홈 화면에 앱으로 설치
+  </button>
+
+  <div class="card gap-16" style="margin-bottom:14px;">
+    <div>
+      <label class="label">닉네임</label>
+      <input type="text" id="input-nickname" placeholder="예) 산책왕김철수" maxlength="10" oninput="onNicknameInput()">
+      <p id="welcome-returning-hint" style="font-size:11px; color:var(--secondary); margin-top:5px; display:none;">저장된 계정이에요. 바로 시작할 수 있어요!</p>
+    </div>
+    <div id="pin-section">
+      <label class="label">4자리 PIN <span style="font-weight:500;text-transform:none;color:var(--text-faint)">(기록 보호용)</span></label>
+      <input type="password" id="input-pin" placeholder="0000" maxlength="4" pattern="[0-9]*" inputmode="numeric">
+      <p style="font-size:11px; color:var(--text-faint); margin-top:6px;">처음 입력한 PIN이 내 계정 비밀번호가 돼요</p>
+    </div>
+    <div>
+      <label class="label">ChatGPT API 키 <span style="font-weight:500;text-transform:none;color:var(--text-faint)">(AI 미션용, 선택)</span></label>
+      <input type="text" id="input-apikey" placeholder="sk-...">
+      <p style="font-size:11px; color:var(--text-faint); margin-top:6px;">AI 미션을 사용하지 않으면 비워도 돼요</p>
+    </div>
+    <button class="btn btn-primary" id="btn-start" onclick="handleWelcomeNext()">시작하기</button>
+  </div>
+
+  <div id="welcome-history" style="display:none; margin-bottom:14px;">
+    <p class="section-eyebrow" style="margin-bottom:10px;">최근 산책 기록</p>
+    <div id="history-list" class="gap-8"></div>
+  </div>
+
+  <div class="badge-card">
+    <p class="section-eyebrow">나의 누적 기록</p>
+    <div class="badge-card-inner">
+      <div class="badge-icon-wrap" id="welcome-badge-emoji"></div>
+      <div style="flex:1; min-width:0;">
+        <p id="welcome-badge-title" style="font-size:16px; font-weight:800; color:var(--text); letter-spacing:-0.02em;"></p>
+        <p id="welcome-stats" style="font-size:12px; color:var(--text-faint); margin-top:3px;"></p>
+        <div class="progress-track-thin" style="margin-top:8px;">
+          <div class="progress-fill-thin" id="welcome-progress-bar" style="width:0%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 혼자/함께 선택 ===== -->
+<section id="screen-mode">
+  <button class="back-btn" onclick="showScreen('welcome')"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+  <div style="text-align:center; margin-top:16px;">
+    <div class="emoji-big">👣</div>
+    <h1 class="page-title">어떻게 걸을까요?</h1>
+    <p class="page-sub">혼자서 조용히, 혹은<br>친구들과 신나게!</p>
+  </div>
+  <div class="gap-12" style="width:100%;">
+    <button class="select-btn select-primary" onclick="selectMode('solo')">
+      <span class="select-btn-icon">🧍</span>
+      <div>
+        <div class="select-btn-label">혼자 걷기</div>
+        <div class="select-btn-sub">자기 선언으로 미션 완료</div>
+      </div>
+    </button>
+    <button class="select-btn select-secondary" onclick="selectMode('group')">
+      <span class="select-btn-icon">👫</span>
+      <div>
+        <div class="select-btn-label">함께 걷기</div>
+        <div class="select-btn-sub">사진 인증 · 랭킹 경쟁</div>
+      </div>
+    </button>
+  </div>
+</section>
+
+<!-- ===== 방 코드 ===== -->
+<section id="screen-room">
+  <button class="back-btn" onclick="showScreen('mode')"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+  <div style="text-align:center; margin-top:16px;">
+    <div class="emoji-big">🚪</div>
+    <h1 class="page-title">함께 걷기</h1>
+    <p class="page-sub" style="margin-bottom:16px;">4자리 코드로 친구를 초대하세요</p>
+  </div>
+  <div class="gap-12" style="width:100%;">
+    <div class="card gap-12">
+      <p class="section-eyebrow" style="margin-bottom:0;">새 방 만들기</p>
+      <button class="btn btn-primary" onclick="createRoom()">방 만들기</button>
+      <div id="room-code-display" style="display:none; text-align:center; padding:8px 0 4px;">
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px; font-weight:600;">친구에게 이 코드를 알려주세요</p>
+        <div class="room-code-big" id="room-code-text"></div>
+        <button class="btn btn-accent" style="margin-top:18px;" onclick="goToLobby()">대기실로 <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+      </div>
+    </div>
+    <div class="card gap-12">
+      <p class="section-eyebrow" style="margin-bottom:0;">코드로 입장</p>
+      <input type="number" id="input-room-code" placeholder="4자리 코드" maxlength="4"
+        style="letter-spacing:8px;text-align:center;font-size:30px;font-weight:800;">
+      <button class="btn btn-secondary" onclick="joinRoom()">입장하기</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 방 대기실 ===== -->
+<section id="screen-lobby">
+  <button class="back-btn" onclick="showScreen('room')"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+  <div style="text-align:center; margin-top:16px; margin-bottom:8px;">
+    <div class="emoji-big" style="margin-bottom:8px;">⏳</div>
+    <h1 class="page-title">방 대기실</h1>
+    <div id="lobby-code-badge" style="display:inline-flex; align-items:center; gap:8px; background:var(--accent-tint); border:1.5px solid var(--accent-light); border-radius:10px; padding:6px 16px; margin:6px 0 8px;">
+      <span style="font-size:11px; font-weight:700; color:var(--text-faint); letter-spacing:0.06em; text-transform:uppercase;">방 코드</span>
+      <span id="lobby-code-text" style="font-size:17px; font-weight:800; letter-spacing:5px; color:var(--accent);"></span>
+    </div>
+    <p class="page-sub" style="margin-bottom:0;">친구들이 입장하면 함께 시작해요</p>
+  </div>
+
+  <div class="card gap-12" style="margin-bottom:12px;">
+    <p class="section-eyebrow">참여 멤버</p>
+    <div id="lobby-members" class="gap-10"></div>
+  </div>
+
+  <div class="card-surface" style="margin-bottom:16px; display:flex; align-items:flex-start; gap:12px;">
+    <div style="width:38px;height:38px;border-radius:10px;background:var(--accent-tint);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏆</div>
+    <div>
+      <p style="font-size:14px; font-weight:800; color:var(--text); margin-bottom:4px; letter-spacing:-0.02em;">경쟁 모드 - 같은 미션, 각자 도전</p>
+      <p style="font-size:12px; color:var(--text-muted); line-height:1.6;">이동 거리 + 미션 완수 시간으로 순위를 겨뤄요.<br>사진 인증만 공식 기록으로 인정됩니다.</p>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="startFromLobby()" id="btn-lobby-start">난이도 선택하고 시작하기</button>
+</section>
+
+<!-- ===== 난이도 선택 ===== -->
+<section id="screen-difficulty">
+  <button class="back-btn" onclick="backFromDifficulty()"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+  <div style="text-align:center; margin-top:16px;">
+    <div class="emoji-big">⚡</div>
+    <h1 class="page-title">난이도 선택</h1>
+    <p class="page-sub">미션 개수를 선택하세요</p>
+  </div>
+  <div class="gap-10" style="width:100%;">
+    <button class="select-btn select-secondary" onclick="selectDifficulty('easy')">
+      <span class="select-btn-icon">😊</span>
+      <div><div class="select-btn-label">쉬움 - 미션 3개</div><div class="select-btn-sub">가볍게 동네 한 바퀴</div></div>
+    </button>
+    <button class="select-btn select-primary" onclick="selectDifficulty('normal')">
+      <span class="select-btn-icon">😤</span>
+      <div><div class="select-btn-label">보통 - 미션 5개</div><div class="select-btn-sub">적당히 땀 흘리기</div></div>
+    </button>
+    <button class="select-btn select-hard" onclick="selectDifficulty('hard')">
+      <span class="select-btn-icon">🔥</span>
+      <div><div class="select-btn-label">어려움 - 미션 10개</div><div class="select-btn-sub">진정한 탐험가의 도전</div></div>
+    </button>
+  </div>
+</section>
+
+<!-- ===== 미션 생성 방식 ===== -->
+<section id="screen-mission-type">
+  <button class="back-btn" onclick="showScreen('difficulty')"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+  <div style="text-align:center; margin-top:16px;">
+    <div class="emoji-big">🎲</div>
+    <h1 class="page-title">미션 생성 방식</h1>
+    <p class="page-sub">어떻게 미션을 받을까요?</p>
+  </div>
+  <div class="gap-12" style="width:100%;">
+    <button class="select-btn select-primary" onclick="handleMissionType('random')">
+      <span class="select-btn-icon">🎲</span>
+      <div><div class="select-btn-label">랜덤 뽑기</div><div class="select-btn-sub">미리 준비된 50개 미션에서 무작위 선택</div></div>
+    </button>
+    <button class="select-btn select-secondary" onclick="handleMissionType('ai')">
+      <span class="select-btn-icon">🤖</span>
+      <div><div class="select-btn-label">AI 미션</div><div class="select-btn-sub">ChatGPT가 내 동네 맞춤 미션을 즉석 생성</div></div>
+    </button>
+  </div>
+</section>
+
+<!-- ===== AI 위치 입력 ===== -->
+<section id="screen-ai-location">
+  <button class="back-btn" onclick="showScreen('mission-type')"><i class="ti ti-arrow-left" aria-hidden="true"></i> 뒤로</button>
+  <div style="text-align:center; margin-top:16px;">
+    <div class="emoji-big">📍</div>
+    <h1 class="page-title">현재 위치를 알려주세요</h1>
+    <p class="page-sub">동네 이름을 입력하면<br>AI가 맞춤 미션을 만들어드려요</p>
+  </div>
+  <div class="card gap-16">
+    <div>
+      <label class="label">현재 위치 (동네/지역)</label>
+      <input type="text" id="input-location" placeholder="예) 홍대, 강남역, 성수동, 연남동">
+    </div>
+    <button class="btn btn-primary" id="btn-generate-ai" onclick="generateAIMissions()">
+      AI 미션 생성하기
+    </button>
+    <div id="ai-loading" style="display:none; text-align:center; padding:16px 0;">
+      <span class="spinning" style="font-size:40px;">🤖</span>
+      <p style="margin-top:12px; color:var(--text-muted); font-weight:700">ChatGPT가 미션을 만드는 중...</p>
+      <p style="font-size:12px; color:var(--text-faint); margin-top:4px">잠시만 기다려주세요</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 산책 중 화면 ===== -->
+<section id="screen-missions" style="padding-bottom:100px;">
+  <!-- 상태 바 -->
+  <div class="walk-status-card">
+    <div class="walk-stat-row">
+      <div>
+        <div class="walk-stat-label">이동 거리</div>
+        <div class="walk-stat-value" style="color:var(--primary);" id="walk-distance">0.00 km</div>
+      </div>
+      <div style="text-align:center;">
+        <p style="font-size:13px; font-weight:700; color:var(--text-muted)">안녕, <span id="walk-nickname" style="color:var(--text);"></span>!</p>
+        <p id="walk-progress-text" style="font-size:13px; color:var(--text-faint); margin-top:2px;">0 / 0 완료</p>
+      </div>
+      <div style="text-align:right;">
+        <div class="walk-stat-label">경과 시간</div>
+        <div class="walk-stat-value" style="color:var(--secondary);" id="walk-time">00:00</div>
+      </div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="walk-progress-bar" style="width:0%;"></div>
+    </div>
+  </div>
+
+  <!-- 미션 목록 -->
+  <div id="mission-list" class="gap-12" style="width:100%;"></div>
+
+  <!-- 하단 고정 버튼 -->
+  <div style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); width:calc(100% - 40px); max-width:390px; z-index:20; display:flex; gap:10px;">
+    <button class="btn btn-ghost" style="flex:0 0 auto; width:auto; padding:14px 16px; background:var(--card); border:1px solid var(--outline); border-radius:var(--radius); box-shadow:var(--shadow-sm);" onclick="cancelWalk()">취소</button>
+    <button class="btn btn-accent" style="flex:1;" onclick="confirmEndWalk()">산책 종료하기</button>
+  </div>
+</section>
+
+<!-- ===== 결과 화면 ===== -->
+<section id="screen-result">
+  <!-- 배지 헤더 -->
+  <div style="text-align:center; margin-top:28px; margin-bottom:20px;">
+    <div id="result-badge-emoji" style="font-size:80px; line-height:1; margin-bottom:14px;"></div>
+    <h1 class="page-title" id="result-badge-title"></h1>
+    <p class="page-sub" style="margin-bottom:0;" id="result-badge-sub"></p>
+  </div>
+
+  <!-- 통계 그리드 -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="stats-grid">
+      <div class="stat-cell stat-orange">
+        <div class="stat-cell-label">이동 거리</div>
+        <div class="stat-cell-value" id="result-distance"></div>
+      </div>
+      <div class="stat-cell stat-mint">
+        <div class="stat-cell-label">소요 시간</div>
+        <div class="stat-cell-value" id="result-time"></div>
+      </div>
+      <div class="stat-cell stat-yellow">
+        <div class="stat-cell-label">완료 미션</div>
+        <div class="stat-cell-value" id="result-missions"></div>
+      </div>
+      <div class="stat-cell stat-purple">
+        <div class="stat-cell-label">누적 거리</div>
+        <div class="stat-cell-value" id="result-total"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 미션 결과 목록 -->
+  <div id="result-mission-list" style="width:100%; margin-bottom:12px;" class="gap-10"></div>
+
+  <!-- 그룹 랭킹 -->
+  <div id="result-ranking" style="width:100%; margin-bottom:12px; display:none;">
+    <div class="card">
+      <p style="font-weight:800; font-size:16px; margin-bottom:14px;">이번 산책 랭킹</p>
+      <div id="ranking-list" class="gap-10"></div>
+    </div>
+  </div>
+
+  <!-- 공유 버튼 -->
+  <div class="gap-10" style="width:100%; margin-top:8px;">
+    <button class="btn btn-primary" onclick="shareResult()">결과 공유하기</button>
+    <button class="btn btn-secondary" onclick="resetAndGoHome()">다시 산책하기</button>
+    <button class="btn btn-ghost" style="width:100%; text-align:center; padding:14px;" onclick="showScreen('welcome')">처음으로</button>
+  </div>
+</section>
+
+<script>
+// ===== 상태 =====
+// ===== Supabase 설정 =====
+// Supabase 대시보드 Settings > API 에서 복사하세요
+const SUPABASE_URL = 'https://slsmjkrvdblcnclfasoz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsc21qa3J2ZGJsY25jbGZhc296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxOTE5NjQsImV4cCI6MjA5Nzc2Nzk2NH0.lNaVhFpFwb2C_MzTxbr6M-l3ePurnU4VQ1FDJM0DUJc';
+
+const db = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+// ===== 상태 =====
+const state = {
+  nickname: '', mode: 'solo', walkMode: 'general',
+  difficulty: 'normal', missionType: 'random',
+  missions: [], roomCode: '',
+  startTime: null, distance: 0, apiKey: '',
+  endTime: null, userId: null
+};
+
+const SCREENS = ['welcome','mode','room','lobby','difficulty','mission-type','ai-location','missions','result'];
+
+function showScreen(id) {
+  SCREENS.forEach(s => {
+    const el = document.getElementById('screen-' + s);
+    if (el) el.style.display = (s === id) ? 'flex' : 'none';
+  });
+  window.scrollTo(0, 0);
+}
+
+// ===== 뱃지 시스템 =====
+const BADGES = [
+  { km: 0,   emoji: '🌱', title: '새싹 탐험가' },
+  { km: 50,  emoji: '👟', title: '동네 산책러' },
+  { km: 100, emoji: '🗺️', title: '도시 탐험가' },
+  { km: 200, emoji: '⛰️', title: '걷기 마스터' },
+  { km: 300, emoji: '🌟', title: '산책 레전드' },
+  { km: 400, emoji: '👑', title: '산책 왕' },
+  { km: 500, emoji: '🏆', title: '전설의 산책러' },
+];
+
+function getBadge(km) {
+  let badge = BADGES[0], idx = 0;
+  for (let i = 0; i < BADGES.length; i++) {
+    if (km >= BADGES[i].km) { badge = BADGES[i]; idx = i; }
+  }
+  return { ...badge, nextKm: idx + 1 < BADGES.length ? BADGES[idx + 1].km : null };
+}
+
+function getTotalKm() { return parseFloat(localStorage.getItem('walk_total_km') || '0'); }
+function saveTotalKm(addKm) {
+  const next = getTotalKm() + addKm;
+  localStorage.setItem('walk_total_km', next.toFixed(3));
+  return next;
+}
+
+// ===== Supabase 헬퍼 =====
+async function hashPin(pin) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function loginOrRegister(nickname, pin) {
+  if (!db) return { success: true, userId: null };
+  const pinHash = await hashPin(pin);
+  const { data: existing } = await db.from('walk_users')
+    .select('id, pin_hash, total_km').eq('nickname', nickname).maybeSingle();
+  if (existing) {
+    if (existing.pin_hash !== pinHash)
+      return { success: false, error: 'PIN이 틀렸어요. 다시 확인해주세요.' };
+    localStorage.setItem('walk_total_km', parseFloat(existing.total_km || 0).toFixed(3));
+    localStorage.setItem('walk_user_id', existing.id);
+    localStorage.setItem('walk_nickname', nickname);
+    return { success: true, userId: existing.id };
+  }
+  const { data: newUser, error } = await db.from('walk_users')
+    .insert({ nickname, pin_hash: pinHash, total_km: 0 }).select('id').single();
+  if (error) return { success: false, error: '계정 생성에 실패했어요. 다시 시도해주세요.' };
+  localStorage.setItem('walk_user_id', newUser.id);
+  localStorage.setItem('walk_nickname', nickname);
+  localStorage.setItem('walk_total_km', '0.000');
+  return { success: true, userId: newUser.id };
+}
+
+async function quickLogin(userId) {
+  if (!db) return;
+  const { data } = await db.from('walk_users').select('total_km').eq('id', userId).maybeSingle();
+  if (data) localStorage.setItem('walk_total_km', parseFloat(data.total_km || 0).toFixed(3));
+}
+
+async function saveWalkToDB() {
+  if (!db || !state.userId) return;
+  const done = state.missions.filter(m => m.completed).length;
+  const elapsed = state.endTime ? Math.floor((state.endTime - state.startTime) / 1000) : 0;
+  await db.from('walk_records').insert({
+    user_id: state.userId, nickname: state.nickname,
+    distance_km: parseFloat(state.distance.toFixed(3)),
+    duration_seconds: elapsed,
+    missions_completed: done, missions_total: state.missions.length,
+    mode: state.mode
+  });
+  await db.from('walk_users')
+    .update({ total_km: parseFloat(getTotalKm().toFixed(3)) })
+    .eq('id', state.userId);
+}
+
+async function fetchWalkHistory(userId) {
+  if (!db || !userId) return [];
+  const { data } = await db.from('walk_records')
+    .select('distance_km,duration_seconds,missions_completed,missions_total,mode,created_at')
+    .eq('user_id', userId).order('created_at', { ascending: false }).limit(5);
+  return data || [];
+}
+
+function renderWalkHistory(records) {
+  const section = document.getElementById('welcome-history');
+  const list = document.getElementById('history-list');
+  if (!records || records.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = records.map(r => {
+    const d = new Date(r.created_at);
+    const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const m = String(Math.floor(r.duration_seconds / 60)).padStart(2,'0');
+    const s = String(r.duration_seconds % 60).padStart(2,'0');
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);">
+      <div style="font-size:20px;flex-shrink:0;">${r.mode === 'group' ? '👫' : '🧍'}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);">${parseFloat(r.distance_km).toFixed(2)}km · ${r.missions_completed}/${r.missions_total}미션</div>
+        <div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${dateStr} · ${m}:${s}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== 미션 풀 =====
+const MISSIONS = {
+  general: [
+    '빨간 간판 5개 찾기 🔴', '파란 간판 3개 찾기 🔵', '노란 간판 4개 찾기 🟡',
+    '강아지 3마리 보기 🐕', '고양이 2마리 찾기 🐱', '비둘기 5마리 찾기 🕊️',
+    '우체통 찾아서 사진 찍기 📮', 'CU 편의점 2곳 찾기 🏪', 'GS25 편의점 찾기 🏬',
+    '공공 화장실 찾기 🚻', '버스 정류장 3곳 지나가기 🚌', '횡단보도 5개 건너기 🚶',
+    '나무 10그루 지나가기 🌳', '꽃 피운 화단 찾기 🌸', '벤치 3개 찾기 🪑',
+    '가로등 10개 지나가기 💡', '자전거 5대 찾기 🚲', '킥보드 3대 찾기 🛴',
+    '계단 30개 오르기 🪜', '공원 한 바퀴 돌기 🏃', '분수대 찾아서 사진 찍기 ⛲',
+    '지하철역 입구 찾기 🚇', '은행 ATM 찾기 🏧', '약국 찾기 💊',
+    '주민센터 건물 찾기 🏛️', '학교 운동장 찾기 🏫', '놀이터 찾기 🛝',
+    '쓰레기통 5개 찾기 🗑️', '소화전 찾기 🚒', '전봇대 10개 지나가기 ⚡',
+    '하늘 사진 찍기 ☁️', '발 사진 찍기 👟', '그림자 사진 찍기 👤',
+    '가장 예쁜 꽃 찾아 사진 찍기 🌺', '주변에서 영어 간판 5개 찾기 🔤',
+    '빨간불 신호 3번 기다리기 🚦', '경찰차 또는 구급차 찾기 🚓',
+  ],
+  couple: [
+    '손잡고 횡단보도 건너기 👫', '같이 셀카 찍기 📸', '벤치에서 5분 함께 쉬기 💕',
+    '아이스크림 하나씩 사 먹기 🍦', '상대방 발 사진 찍기 👟',
+    '같이 그림자 사진 찍기 👤', '카페 찾아서 음료 주문하기 ☕',
+    '예쁜 벽화 앞에서 사진 찍기 🎨', '공원 한 바퀴 손잡고 걷기 🌳',
+    '서로 좋아하는 간판 1개씩 찾기 💛', '편의점에서 간식 골라 나눠 먹기 🍡',
+    '꽃 앞에서 사진 찍기 🌸', '구름 모양 함께 맞추기 ☁️',
+    '골목길 탐험하기 🏘️', '아무 식당 들어가서 메뉴판 구경하기 🍽️',
+  ],
+  friend: [
+    '가위바위보 해서 진 사람이 사진 찍기 ✌️', '번갈아가며 다음 길 정하기 🗺️',
+    '가장 웃긴 간판 찾기 경쟁 😂', '계단 빨리 오르기 🏃',
+    '낯선 장소 찾아가기 🔍', '편의점 500원 이하 간식 찾기 🍬',
+    '길거리 고양이 먼저 발견하기 🐱', '강아지 발견하고 조용히 손가락으로 가리키기 🐕',
+    '같이 하늘 보며 걷기 1분 ☁️', '모르는 골목 탐험하기 🏘️',
+    '그림자로 재밌는 포즈 찍기 👤', '버스 번호 합산 가장 큰 사람 승리 🚌',
+    '가장 특이한 가게 이름 찾기 🏪', '가장 오래된 건물 먼저 찾기 🏚️',
+  ],
+  family: [
+    '아이가 돌 발로 차기 🪨', '나뭇잎 5개 모아서 사진 찍기 🍃',
+    '꽃 이름 맞추기 퀴즈 🌸', '제일 큰 나무 찾기 🌲', '개미 찾기 🐜',
+    '구름 모양 동물 찾기 ☁️', '아이가 좋아하는 가게 찾기 🏪',
+    '놀이터 한 바퀴 돌기 🛝', '가장 예쁜 꽃 찾기 🌺', '특이한 돌멩이 찾기 🪨',
+    '달팽이 찾기 🐌', '깃털 찾기 🪶', '나무 껍질 만져보기 🌳',
+    '가족 발 크기 비교 사진 찍기 👟', '벌레 찾아보기 🐛',
+  ],
+};
+
+const DIFFICULTY_COUNT = { easy: 3, normal: 5, hard: 10 };
+
+function getMissionCount() { return DIFFICULTY_COUNT[state.difficulty]; }
+
+function generateMissions() {
+  const pool = [...MISSIONS[state.walkMode]];
+  const count = getMissionCount();
+  const picked = [];
+  while (picked.length < Math.min(count, pool.length)) {
+    const idx = Math.floor(Math.random() * pool.length);
+    picked.push(pool.splice(idx, 1)[0]);
+  }
+  state.missions = picked.map((text, i) => ({ id: i, text, completed: false, photoUrl: null }));
+}
+
+// ===== 환영 화면 =====
+function onNicknameInput() {
+  const nick = document.getElementById('input-nickname').value.trim();
+  const savedId = localStorage.getItem('walk_user_id');
+  const savedNick = localStorage.getItem('walk_nickname');
+  const isReturning = !!(savedId && nick && nick === savedNick);
+  document.getElementById('pin-section').style.display = isReturning ? 'none' : 'block';
+  document.getElementById('welcome-returning-hint').style.display = isReturning ? 'block' : 'none';
+}
+
+async function handleWelcomeNext() {
+  const nick = document.getElementById('input-nickname').value.trim();
+  if (!nick) { alert('닉네임을 입력해주세요!'); return; }
+  const savedId = localStorage.getItem('walk_user_id');
+  const savedNick = localStorage.getItem('walk_nickname');
+  const btn = document.getElementById('btn-start');
+  btn.disabled = true;
+  btn.textContent = '확인 중...';
+  try {
+    if (savedId && savedNick === nick) {
+      await quickLogin(savedId);
+      state.userId = savedId;
+    } else {
+      if (!db) {
+        state.userId = null;
+      } else {
+        const pin = document.getElementById('input-pin').value.trim();
+        if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+          alert('4자리 숫자 PIN을 입력해주세요.'); return;
+        }
+        const result = await loginOrRegister(nick, pin);
+        if (!result.success) { alert(result.error); return; }
+        state.userId = result.userId;
+      }
+    }
+    state.nickname = nick;
+    state.apiKey = document.getElementById('input-apikey').value.trim();
+    showScreen('mode');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '시작하기';
+  }
+}
+
+async function loadWelcomeStats() {
+  const total = getTotalKm();
+  const badge = getBadge(total);
+  document.getElementById('welcome-badge-emoji').textContent = badge.emoji;
+  document.getElementById('welcome-badge-title').textContent = badge.title;
+  document.getElementById('welcome-stats').textContent =
+    `총 ${total.toFixed(1)}km · ${badge.nextKm ? `다음 등급까지 ${(badge.nextKm - total).toFixed(1)}km` : '최고 등급 달성!'}`;
+  const bar = document.getElementById('welcome-progress-bar');
+  if (bar && badge.nextKm) {
+    const prev = badge.km;
+    const pct = Math.min(100, ((total - prev) / (badge.nextKm - prev)) * 100);
+    bar.style.width = pct + '%';
+  } else if (bar) {
+    bar.style.width = '100%';
+  }
+  // 저장된 닉네임 자동 입력
+  const savedNick = localStorage.getItem('walk_nickname');
+  if (savedNick) {
+    document.getElementById('input-nickname').value = savedNick;
+    onNicknameInput();
+  }
+  // 최근 산책 기록 로드
+  const savedId = localStorage.getItem('walk_user_id');
+  if (savedId) {
+    const history = await fetchWalkHistory(savedId);
+    renderWalkHistory(history);
+  }
+}
+
+// ===== 모드 선택 =====
+function selectMode(mode) {
+  state.mode = mode;
+  if (mode === 'group') {
+    showScreen('room');
+  } else {
+    state.walkMode = 'general';
+    showScreen('difficulty');
+  }
+}
+
+// ===== 방 코드 =====
+function createRoom() {
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  state.roomCode = code;
+  localStorage.setItem('walk_room_' + code, JSON.stringify({
+    host: state.nickname, members: [{ nick: state.nickname, distance: 0, done: 0, time: 0 }]
+  }));
+  document.getElementById('room-code-text').textContent = code;
+  document.getElementById('room-code-display').style.display = 'block';
+}
+
+function joinRoom() {
+  const code = document.getElementById('input-room-code').value.trim();
+  if (code.length !== 4) { alert('4자리 코드를 입력하세요'); return; }
+  const raw = localStorage.getItem('walk_room_' + code);
+  if (!raw) { alert('방을 찾을 수 없어요. 코드를 다시 확인해주세요.'); return; }
+  state.roomCode = code;
+  const room = JSON.parse(raw);
+  if (!room.members.find(m => m.nick === state.nickname)) {
+    room.members.push({ nick: state.nickname, distance: 0, done: 0, time: 0 });
+    localStorage.setItem('walk_room_' + code, JSON.stringify(room));
+  }
+  goToLobby();
+}
+
+function goToLobby() {
+  state.walkMode = 'general';
+  document.getElementById('lobby-code-text').textContent = state.roomCode;
+  renderLobby();
+  showScreen('lobby');
+}
+
+function renderLobby() {
+  const raw = localStorage.getItem('walk_room_' + state.roomCode);
+  if (!raw) return;
+  const room = JSON.parse(raw);
+  const avatars = ['🧑', '👩', '🧒', '👨', '👧', '🧔'];
+  document.getElementById('lobby-members').innerHTML = room.members.map((m, i) => `
+    <div style="display:flex; align-items:center; gap:12px; background:${m.nick === state.nickname ? 'var(--primary-light)' : 'var(--surface-low)'}; border-radius:var(--radius-sm); padding:12px 14px; border:1.5px solid ${m.nick === room.host ? 'var(--primary)' : 'var(--outline)'};">
+      <span style="font-size:24px; flex-shrink:0;">${avatars[i % avatars.length]}</span>
+      <span style="flex:1; font-size:14px; font-weight:700; color:var(--text);">${m.nick}</span>
+      ${m.nick === room.host ? '<span style="font-size:11px; font-weight:700; background:var(--primary); color:white; padding:3px 10px; border-radius:99px;">방장</span>' : '<span style="font-size:11px; font-weight:700; background:var(--secondary); color:white; padding:3px 10px; border-radius:99px;">준비 완료</span>'}
+    </div>
+  `).join('') + `
+    <div style="display:flex; align-items:center; gap:12px; background:var(--surface-low); border-radius:var(--radius-sm); padding:12px 14px; border:1.5px dashed var(--outline); opacity:0.55;">
+      <span style="font-size:24px; flex-shrink:0;">👤</span>
+      <span style="font-size:13px; color:var(--text-faint); font-weight:600;">참여 대기 중...</span>
+    </div>`;
+}
+
+function startFromLobby() {
+  showScreen('difficulty');
+}
+
+// ===== 난이도 =====
+function selectDifficulty(d) { state.difficulty = d; showScreen('mission-type'); }
+function backFromDifficulty() {
+  if (state.mode === 'group') showScreen('lobby');
+  else showScreen('mode');
+}
+
+// ===== 미션 타입 =====
+function handleMissionType(type) {
+  state.missionType = type;
+  if (type === 'ai') {
+    if (!state.apiKey) { alert('AI 미션을 사용하려면 처음 화면에서 ChatGPT API 키를 입력해주세요!'); return; }
+    showScreen('ai-location');
+  } else {
+    generateMissions();
+    startWalk();
+  }
+}
+
+// ===== AI 미션 생성 =====
+async function generateAIMissions() {
+  const location = document.getElementById('input-location').value.trim();
+  if (!location) { alert('위치를 입력해주세요!'); return; }
+  const count = getMissionCount();
+  const modeNames = { general:'일반', couple:'커플', friend:'친구', family:'가족' };
+  const btn = document.getElementById('btn-generate-ai');
+  const loading = document.getElementById('ai-loading');
+  btn.disabled = true; btn.style.display = 'none';
+  loading.style.display = 'block';
+  const prompt = `당신은 재미있는 산책 미션 생성 전문가입니다.
+
+위치: ${location}
+모드: ${modeNames[state.walkMode]}
+미션 개수: ${count}개
+
+위 위치의 특성에 맞는, 실제로 그 동네에서 찾거나 할 수 있는 재미있는 산책 미션 ${count}개를 만들어주세요.
+이모지를 포함해 20자 이내로 작성하세요. 너무 어렵지 않게, 누구나 즐겁게 할 수 있는 미션이어야 합니다.
+
+반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
+{"missions": ["미션1", "미션2", ...]}`;
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + state.apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || res.statusText); }
+    const data = await res.json();
+    const text = data.choices[0].message.content.trim();
+    const json = JSON.parse(text);
+    state.missions = json.missions.slice(0, count).map((t, i) => ({ id: i, text: t, completed: false, photoUrl: null }));
+    startWalk();
+  } catch (e) {
+    alert('AI 미션 생성 실패: ' + e.message);
+    btn.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    loading.style.display = 'none';
+  }
+}
+
+// ===== GPS + 타이머 =====
+let watchId = null, timerInterval = null, lastPos = null;
+
+function startWalk() {
+  state.startTime = Date.now();
+  state.distance = 0;
+  state.endTime = null;
+  lastPos = null;
+  showScreen('missions');
+  document.getElementById('walk-nickname').textContent = state.nickname;
+  renderMissions();
+  startTimer();
+  startGPS();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    const el = document.getElementById('walk-time');
+    if (el) el.textContent = m + ':' + s;
+  }, 1000);
+}
+
+function startGPS() {
+  if (!navigator.geolocation) return;
+  watchId = navigator.geolocation.watchPosition(pos => {
+    if (lastPos) {
+      const d = calcDistance(lastPos.lat, lastPos.lng, pos.coords.latitude, pos.coords.longitude);
+      if (d > 0 && d < 0.1) {
+        state.distance += d;
+        const el = document.getElementById('walk-distance');
+        if (el) el.textContent = state.distance.toFixed(2) + ' km';
+      }
+    }
+    lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+  }, () => {}, { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 });
+}
+
+function calcDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ===== 미션 렌더링 =====
+function renderMissions() {
+  const list = document.getElementById('mission-list');
+  const isGroup = state.mode === 'group';
+  list.innerHTML = state.missions.map((m, i) => `
+    <div class="mission-card fade-in ${m.completed ? 'done' : ''}" id="mission-card-${i}">
+      <div style="display:flex; align-items:flex-start; gap:14px;">
+        <div class="mission-check ${m.completed ? 'checked' : ''}"></div>
+        <div style="flex:1; min-width:0;">
+          <p style="font-size:15px; font-weight:700; line-height:1.5; word-break:keep-all;
+            ${m.completed ? 'text-decoration:line-through;color:var(--text-muted)' : 'color:var(--text)'}">${m.text}</p>
+          ${m.completed
+            ? `<div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span class="chip ${m.photoUrl ? 'chip-photo' : 'chip-self'}">${m.photoUrl ? '📸 사진 인증' : '✋ 자기 선언'}</span>
+                ${m.photoUrl ? `<img src="${m.photoUrl}" style="width:52px;height:52px;object-fit:cover;border-radius:12px;">` : ''}
+              </div>`
+            : `<div style="margin-top:12px; display:flex; gap:8px;">
+                ${!isGroup ? `<button class="btn btn-secondary" style="flex:1;padding:11px 8px;font-size:13px;border-radius:var(--radius-sm);" onclick="completeSelf(${i})">완료 ✓</button>` : ''}
+                <label class="btn btn-primary" style="flex:1;padding:11px 8px;font-size:13px;text-align:center;cursor:pointer;border-radius:var(--radius-sm);">
+                  📸 사진 인증
+                  <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="completePhoto(${i}, this)">
+                </label>
+              </div>`
+          }
+        </div>
+      </div>
+    </div>
+  `).join('');
+  updateProgress();
+}
+
+function completeSelf(i) {
+  state.missions[i].completed = true;
+  state.missions[i].photoUrl = null;
+  const card = document.getElementById('mission-card-' + i);
+  if (card) card.classList.add('animate-pop');
+  renderMissions();
+}
+
+function completePhoto(i, input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.missions[i].completed = true;
+    state.missions[i].photoUrl = e.target.result;
+    renderMissions();
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function updateProgress() {
+  const done = state.missions.filter(m => m.completed).length;
+  const total = state.missions.length;
+  const el = document.getElementById('walk-progress-text');
+  const bar = document.getElementById('walk-progress-bar');
+  if (el) el.textContent = `${done} / ${total} 완료`;
+  if (bar) bar.style.width = total > 0 ? (done / total * 100) + '%' : '0%';
+}
+
+// ===== 산책 종료 =====
+function cancelWalk() {
+  if (!confirm('산책을 취소하면 기록이 저장되지 않아요. 취소할까요?')) return;
+  if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  clearInterval(timerInterval);
+  state.distance = 0;
+  state.missions = [];
+  lastPos = null;
+  showScreen('difficulty');
+}
+
+function confirmEndWalk() {
+  const done = state.missions.filter(m => m.completed).length;
+  const msg = done < state.missions.length
+    ? `아직 ${state.missions.length - done}개 미션이 남았어요. 그래도 종료할까요?`
+    : '모든 미션을 완료했어요! 산책을 종료할까요?';
+  if (confirm(msg)) endWalk();
+}
+
+function endWalk() {
+  state.endTime = Date.now();
+  if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  clearInterval(timerInterval);
+  const newTotal = saveTotalKm(state.distance);
+  if (state.mode === 'group' && state.roomCode) saveRoomResult(newTotal);
+  saveWalkToDB(); // 비동기, 결과 화면 전환 블로킹 없음
+  showResultScreen(newTotal);
+}
+
+function saveRoomResult(newTotal) {
+  const raw = localStorage.getItem('walk_room_' + state.roomCode);
+  if (!raw) return;
+  const room = JSON.parse(raw);
+  const elapsed = Math.floor((state.endTime - state.startTime) / 1000);
+  const done = state.missions.filter(m => m.completed).length;
+  const idx = room.members.findIndex(m => m.nick === state.nickname);
+  const entry = { nick: state.nickname, distance: state.distance, done, time: elapsed };
+  if (idx >= 0) room.members[idx] = entry; else room.members.push(entry);
+  localStorage.setItem('walk_room_' + state.roomCode, JSON.stringify(room));
+}
+
+// ===== 결과 화면 =====
+function showResultScreen(newTotal) {
+  const elapsed = Math.floor((state.endTime - state.startTime) / 1000);
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
+  const done = state.missions.filter(ms => ms.completed).length;
+  const badge = getBadge(newTotal);
+
+  document.getElementById('result-badge-emoji').textContent = badge.emoji;
+  document.getElementById('result-badge-title').textContent = `${badge.title} 달성!`;
+  document.getElementById('result-badge-sub').textContent = badge.nextKm
+    ? `다음 등급까지 ${(badge.nextKm - newTotal).toFixed(1)}km 남았어요`
+    : '🎉 모든 등급을 달성했어요!';
+  document.getElementById('result-distance').textContent = state.distance.toFixed(2) + ' km';
+  document.getElementById('result-time').textContent = m + ':' + s;
+  document.getElementById('result-missions').textContent = done + '/' + state.missions.length;
+  document.getElementById('result-total').textContent = newTotal.toFixed(1) + ' km';
+
+  const mList = document.getElementById('result-mission-list');
+  mList.innerHTML = state.missions.map(ms => `
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:white;border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);">
+      <span style="font-size:22px; flex-shrink:0;">${ms.completed ? (ms.photoUrl ? '📸' : '✅') : '❌'}</span>
+      <span style="font-size:13px;flex:1;word-break:keep-all;font-weight:600;${!ms.completed?'color:var(--text-muted);text-decoration:line-through;':''}">${ms.text}</span>
+      ${ms.completed ? `<span class="chip ${ms.photoUrl?'chip-photo':'chip-self'}">${ms.photoUrl?'인증':'선언'}</span>` : ''}
+    </div>
+  `).join('');
+
+  if (state.mode === 'group' && state.roomCode) {
+    const raw = localStorage.getItem('walk_room_' + state.roomCode);
+    if (raw) {
+      const room = JSON.parse(raw);
+      const sorted = [...room.members].sort((a, b) => b.distance - a.distance || a.time - b.time);
+      document.getElementById('result-ranking').style.display = 'block';
+      document.getElementById('ranking-list').innerHTML = sorted.map((mem, i) => {
+        const min = String(Math.floor(mem.time/60)).padStart(2,'0');
+        const sec = String(mem.time%60).padStart(2,'0');
+        const medals = ['🥇','🥈','🥉'];
+        return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;${i<sorted.length-1?'border-bottom:1.5px solid var(--surface-high)':''}">
+          <span style="font-size:26px;">${medals[i]||'🏅'}</span>
+          <div style="flex:1;">
+            <p style="font-weight:700;font-size:15px;${mem.nick===state.nickname?'color:var(--primary)':''}">${mem.nick}${mem.nick===state.nickname?' (나)':''}</p>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:2px">✅ ${mem.done}개 · ⏱ ${min}:${sec}</p>
+          </div>
+          <p style="font-weight:800;color:var(--primary);font-size:16px">${(mem.distance||0).toFixed(2)}km</p>
+        </div>`;
+      }).join('');
+    }
+  } else {
+    document.getElementById('result-ranking').style.display = 'none';
+  }
+
+  showScreen('result');
+}
+
+async function shareResult() {
+  const total = getTotalKm();
+  const badge = getBadge(total);
+  const done = state.missions.filter(m => m.completed).length;
+  const elapsed = state.endTime ? Math.floor((state.endTime - state.startTime) / 1000) : 0;
+  const min = String(Math.floor(elapsed/60)).padStart(2,'0');
+  const sec = String(elapsed%60).padStart(2,'0');
+  const text = `🗺️ 랜덤 산책 미션 완료!\n\n${badge.emoji} ${state.nickname} (${badge.title})\n🏃 ${state.distance.toFixed(2)}km 걷기\n✅ ${done}/${state.missions.length}개 미션 달성\n⏱ 소요 시간 ${min}:${sec}\n\n#랜덤산책미션 #산책게임`;
+  if (navigator.share) {
+    try { await navigator.share({ title: '랜덤 산책 미션 결과', text }); return; } catch {}
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    alert('결과가 클립보드에 복사됐어요! 카톡이나 SNS에 붙여넣기 하세요 📋');
+  } catch {
+    prompt('아래 텍스트를 복사하세요:', text);
+  }
+}
+
+function resetAndGoHome() {
+  state.missions = [];
+  state.distance = 0;
+  state.roomCode = '';
+  state.startTime = null;
+  state.endTime = null;
+  lastPos = null;
+  document.getElementById('room-code-display').style.display = 'none';
+  document.getElementById('input-room-code').value = '';
+  document.getElementById('result-ranking').style.display = 'none';
+  showScreen('mode');
+}
+
+// ===== 초기화 =====
+document.addEventListener('DOMContentLoaded', () => {
+  showScreen('welcome');
+  loadWelcomeStats();
+});
+
+// ===== PWA 초기화 =====
+(function initPWA() {
+  // 1. 서비스워커 등록 (오프라인 지원)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () =>
+      navigator.serviceWorker.register('./sw.js').catch(() => {})
+    );
+  }
+
+  // 2. iOS apple-touch-icon: canvas로 PNG 생성 (SVG를 지원 안 하는 구형 iOS 대비)
+  try {
+    const size = 180;
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    const s = size / 512;
+
+    // 둥근 테라코타 배경
+    const r = 36;
+    ctx.beginPath();
+    ctx.moveTo(r, 0); ctx.lineTo(size - r, 0);
+    ctx.arcTo(size, 0, size, r, r);
+    ctx.lineTo(size, size - r);
+    ctx.arcTo(size, size, size - r, size, r);
+    ctx.lineTo(r, size);
+    ctx.arcTo(0, size, 0, size - r, r);
+    ctx.lineTo(0, r);
+    ctx.arcTo(0, 0, r, 0, r);
+    ctx.closePath();
+    ctx.fillStyle = '#C96845';
+    ctx.fill();
+
+    // 발자국 그리기
+    function drawFoot(tx, ty, angle, mirror) {
+      ctx.save();
+      ctx.translate(tx * s, ty * s);
+      ctx.rotate(angle);
+      if (mirror) ctx.scale(-1, 1);
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 42 * s, 70 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      [[-32,-84],[-14,-94],[6,-96],[24,-88],[38,-74]].forEach(([x, y]) => {
+        ctx.beginPath();
+        ctx.arc(x * s, y * s, 13 * s, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    drawFoot(175, 295, -0.35, false);  // 왼발
+    drawFoot(322, 192,  0.35, true);   // 오른발 (좌우반전)
+
+    document.getElementById('pwa-apple-icon').href = c.toDataURL('image/png');
+  } catch (e) { /* 캔버스 미지원 환경 무시 */ }
+
+  // 3. 설치 배너 (Android)
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.style.display = 'flex';
+  });
+  window.addEventListener('appinstalled', () => {
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.style.display = 'none';
+    deferredPrompt = null;
+  });
+  window.triggerInstall = () => {
+    if (deferredPrompt) { deferredPrompt.prompt(); }
+  };
+})();
+</script>
+</body>
+</html>
