@@ -29,12 +29,45 @@ export default async function handler(req, res) {
     return d.documents || [];
   };
 
+  // Kakao 키 앞 4자리만 로그 (디버깅용)
+  console.log('[kakao-key-prefix]', kakaoKey ? kakaoKey.slice(0, 4) + '...(len=' + kakaoKey.length + ')' : 'MISSING');
+
   let cafes = [], restaurants = [];
   try {
-    [cafes, restaurants] = await Promise.all([
-      kakaoSearch(location + ' 카페', 'CE7'),
-      kakaoSearch(location + ' 맛집', 'FD6'),
+    const [cafesRaw, restaurantsRaw] = await Promise.all([
+      (async () => {
+        const url = new URL('https://dapi.kakao.com/v2/local/search/keyword.json');
+        url.searchParams.set('query', location + ' 카페');
+        url.searchParams.set('category_group_code', 'CE7');
+        url.searchParams.set('size', '10');
+        url.searchParams.set('sort', 'popularity');
+        const r = await fetch(url.toString(), { headers: { Authorization: `KakaoAK ${kakaoKey}` } });
+        const text = await r.text();
+        if (!r.ok) {
+          console.log('[kakao-cafe-error]', r.status, text);
+          return [];
+        }
+        const d = JSON.parse(text);
+        return d.documents || [];
+      })(),
+      (async () => {
+        const url = new URL('https://dapi.kakao.com/v2/local/search/keyword.json');
+        url.searchParams.set('query', location + ' 맛집');
+        url.searchParams.set('category_group_code', 'FD6');
+        url.searchParams.set('size', '10');
+        url.searchParams.set('sort', 'popularity');
+        const r = await fetch(url.toString(), { headers: { Authorization: `KakaoAK ${kakaoKey}` } });
+        const text = await r.text();
+        if (!r.ok) {
+          console.log('[kakao-restaurant-error]', r.status, text);
+          return [];
+        }
+        const d = JSON.parse(text);
+        return d.documents || [];
+      })(),
     ]);
+    cafes = cafesRaw;
+    restaurants = restaurantsRaw;
   } catch (e) {
     return res.status(500).json({ error: '장소 검색 실패: ' + e.message });
   }
