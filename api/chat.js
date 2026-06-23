@@ -29,19 +29,33 @@ export default async function handler(req, res) {
     return d.documents || [];
   };
 
-  let cafes = [], restaurants = [];
-  try {
-    [cafes, restaurants] = await Promise.all([
-      kakaoSearch(location + ' 카페', 'CE7'),
-      kakaoSearch(location + ' 맛집', 'FD6'),
-    ]);
-  } catch (e) {
-    return res.status(500).json({ error: '장소 검색 실패: ' + e.message });
-  }
+  // 카카오 API 원본 응답 확인용 (디버그)
+  const kakaoRaw = async (query, categoryCode) => {
+    const url = new URL('https://dapi.kakao.com/v2/local/search/keyword.json');
+    url.searchParams.set('query', query);
+    url.searchParams.set('category_group_code', categoryCode);
+    url.searchParams.set('size', '10');
+    url.searchParams.set('sort', 'popularity');
+    const r = await fetch(url.toString(), {
+      headers: { Authorization: `KakaoAK ${kakaoKey}` }
+    });
+    const text = await r.text();
+    return { status: r.status, body: text };
+  };
 
-  if (cafes.length === 0 && restaurants.length === 0) {
-    return res.status(404).json({ error: `"${location}" 주변 장소를 찾지 못했어요. 다른 지역명을 입력해보세요.` });
-  }
+  const [cafeRaw, restRaw] = await Promise.all([
+    kakaoRaw(location + ' 카페', 'CE7'),
+    kakaoRaw(location + ' 맛집', 'FD6'),
+  ]);
+
+  // 디버그: 카카오 응답 그대로 반환
+  return res.status(200).json({
+    debug: true,
+    cafeStatus: cafeRaw.status,
+    cafeBody: cafeRaw.body.substring(0, 500),
+    restStatus: restRaw.status,
+    restBody: restRaw.body.substring(0, 300),
+  });
 
   // 2. 상호명 목록 포매팅
   const formatList = (places, label) =>
