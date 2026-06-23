@@ -1209,6 +1209,10 @@ function cancelWalk() {
   state.distance = 0;
   state.missions = [];
   lastPos = null;
+  const btn = document.getElementById('btn-generate-ai');
+  const loading = document.getElementById('ai-loading');
+  if (btn) { btn.style.display = ''; btn.disabled = false; }
+  if (loading) loading.style.display = 'none';
   showScreen('difficulty');
 }
 
