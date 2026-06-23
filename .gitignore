@@ -3,7 +3,10 @@ node_modules/
 .env
 .env.local
 
-# 세션/내부 파일
+# Claude / AI 도구 내부 파일
+.agents/
+.claude/
+.codex/
 session5/
 skills-lock.json
 superpowers/
@@ -13,3 +16,5 @@ AI메모.txt
 # OS
 .DS_Store
 Thumbs.db
+
+.vercel
