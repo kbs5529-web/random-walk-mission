@@ -1330,6 +1330,10 @@ function resetAndGoHome() {
   document.getElementById('room-code-display').style.display = 'none';
   document.getElementById('input-room-code').value = '';
   document.getElementById('result-ranking').style.display = 'none';
+  const btn = document.getElementById('btn-generate-ai');
+  const loading = document.getElementById('ai-loading');
+  if (btn) { btn.style.display = ''; btn.disabled = false; }
+  if (loading) loading.style.display = 'none';
   showScreen('mode');
 }
 
