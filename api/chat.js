@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
   const count = difficulty === 'easy' ? 3 : difficulty === 'hard' ? 10 : 5;
 
-  // 1. 카카오 로컬 API — 카페(CE7) + 음식점(FD6) 인기순 검색
+  // 카카오 로컬 API 검색
   const kakaoSearch = async (query, categoryCode) => {
     const url = new URL('https://dapi.kakao.com/v2/local/search/keyword.json');
     url.searchParams.set('query', query);
@@ -29,44 +29,32 @@ export default async function handler(req, res) {
     return d.documents || [];
   };
 
-  // 카카오 API 원본 응답 확인용 (디버그)
-  const kakaoRaw = async (query, categoryCode) => {
-    const url = new URL('https://dapi.kakao.com/v2/local/search/keyword.json');
-    url.searchParams.set('query', query);
-    url.searchParams.set('category_group_code', categoryCode);
-    url.searchParams.set('size', '10');
-    url.searchParams.set('sort', 'popularity');
-    const r = await fetch(url.toString(), {
-      headers: { Authorization: `KakaoAK ${kakaoKey}` }
-    });
-    const text = await r.text();
-    return { status: r.status, body: text };
-  };
+  let cafes = [], restaurants = [];
+  try {
+    [cafes, restaurants] = await Promise.all([
+      kakaoSearch(location + ' 카페', 'CE7'),
+      kakaoSearch(location + ' 맛집', 'FD6'),
+    ]);
+  } catch (e) {
+    return res.status(500).json({ error: '장소 검색 실패: ' + e.message });
+  }
 
-  const [cafeRaw, restRaw] = await Promise.all([
-    kakaoRaw(location + ' 카페', 'CE7'),
-    kakaoRaw(location + ' 맛집', 'FD6'),
-  ]);
+  if (cafes.length === 0 && restaurants.length === 0) {
+    return res.status(404).json({ error: `"${location}" 주변 장소를 찾지 못했어요. 다른 지역명을 입력해보세요.` });
+  }
 
-  // 디버그: 카카오 응답 그대로 반환
-  return res.status(200).json({
-    debug: true,
-    cafeStatus: cafeRaw.status,
-    cafeBody: cafeRaw.body.substring(0, 500),
-    restStatus: restRaw.status,
-    restBody: restRaw.body.substring(0, 300),
-  });
-
-  // 2. 상호명 목록 포매팅
-  const formatList = (places, label) =>
-    places.slice(0, 8).map(p => `  - ${p.place_name} (${p.road_address_name || p.address_name})`).join('\n');
+  // 상호명 목록 포매팅
+  const formatList = (places) =>
+    places.slice(0, 8).map(p =>
+      `  - ${p.place_name} (${p.road_address_name || p.address_name})`
+    ).join('\n');
 
   const placeBlock = [
-    cafes.length      ? `[카페 인기 TOP ${Math.min(cafes.length, 8)}]\n${formatList(cafes)}`       : '',
-    restaurants.length? `[음식점 인기 TOP ${Math.min(restaurants.length, 8)}]\n${formatList(restaurants)}` : '',
+    cafes.length       ? `[카페 인기 TOP ${Math.min(cafes.length, 8)}]\n${formatList(cafes)}`       : '',
+    restaurants.length ? `[음식점 인기 TOP ${Math.min(restaurants.length, 8)}]\n${formatList(restaurants)}` : '',
   ].filter(Boolean).join('\n\n');
 
-  // 3. GPT 프롬프트 — 상호명 그대로 사용 강제
+  // GPT 미션 생성
   const prompt = `아래는 카카오맵에서 "${location}" 인기 장소를 실제로 검색한 결과입니다.
 
 ${placeBlock}
@@ -74,10 +62,10 @@ ${placeBlock}
 이 목록에서 장소를 골라 방문 미션 ${count}개를 만드세요.
 
 [절대 규칙]
-1. 미션에 반드시 위 목록의 정확한 상호명을 그대로 넣어야 합니다 (예: "어니언 성수점", "성수연방")
+1. 반드시 위 목록의 정확한 상호명을 그대로 넣어야 합니다
 2. "성수동 카페에서" 같이 뭉뚱그린 표현 금지 — 반드시 구체적 상호명 사용
 3. 이모지 포함 30자 이내
-4. 미션 예시: "☕ 어니언 성수점에서 소금빵 먹기", "🍜 성수연방 맛집에서 점심 즐기기"
+4. 예시: "☕ 어니언 성수점에서 소금빵 먹기", "🍜 XX식당에서 점심 즐기기"
 
 반드시 아래 JSON 형식으로만 응답 (다른 텍스트 없이):
 {"missions": ["미션1", "미션2", ...]}`;
