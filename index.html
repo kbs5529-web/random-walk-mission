@@ -428,9 +428,22 @@
     <h1 class="page-title">랜덤 산책<br>미션 생성기</h1>
     <p class="page-sub">산책을 게임으로 바꿔드려요<br>미션을 완수하며 동네를 탐험하세요</p>
   </div>
+  <!-- Android 설치 버튼 -->
   <button id="pwa-install-btn" onclick="triggerInstall()" style="display:none; align-items:center; gap:8px; background:var(--secondary-tint); border:1.5px solid var(--secondary-light); color:var(--secondary); font-size:13px; font-weight:700; padding:10px 18px; border-radius:var(--radius-pill); cursor:pointer; margin-bottom:4px; width:100%; justify-content:center;">
     <i class="ti ti-device-mobile-down" style="font-size:16px;"></i> 홈 화면에 앱으로 설치
   </button>
+  <!-- iOS 설치 안내 배너 -->
+  <div id="ios-install-banner" style="display:none; flex-direction:column; gap:8px; background:var(--accent-tint); border:1.5px solid var(--accent-light); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:4px; width:100%;">
+    <p style="font-size:13px; font-weight:700; color:var(--text);">홈 화면에 앱으로 설치하기</p>
+    <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted);">
+      <span style="font-size:18px;">1</span>
+      <span>하단 공유 버튼 <strong style="font-size:16px;">□↑</strong> 탭</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted);">
+      <span style="font-size:18px;">2</span>
+      <span><strong>"홈 화면에 추가"</strong> 선택 후 추가</span>
+    </div>
+  </div>
 
   <div class="card gap-16" style="margin-bottom:14px;">
     <div>
@@ -1347,23 +1360,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ===== PWA 초기화 =====
 (function initPWA() {
-  // 1. 서비스워커 등록 (오프라인 지원)
+  // 1. 서비스워커 등록
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () =>
       navigator.serviceWorker.register('./sw.js').catch(() => {})
     );
   }
 
-  // 2. iOS apple-touch-icon: canvas로 PNG 생성 (SVG를 지원 안 하는 구형 iOS 대비)
-  try {
-    const size = 180;
+  // 2. canvas로 PNG 아이콘 생성 (Android 설치 기준 충족 + iOS apple-touch-icon)
+  function drawIcon(size) {
     const c = document.createElement('canvas');
     c.width = c.height = size;
     const ctx = c.getContext('2d');
     const s = size / 512;
+    const r = Math.round(size * 0.18);
 
     // 둥근 테라코타 배경
-    const r = 36;
     ctx.beginPath();
     ctx.moveTo(r, 0); ctx.lineTo(size - r, 0);
     ctx.arcTo(size, 0, size, r, r);
@@ -1377,7 +1389,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillStyle = '#C96845';
     ctx.fill();
 
-    // 발자국 그리기
+    // 발자국
     function drawFoot(tx, ty, angle, mirror) {
       ctx.save();
       ctx.translate(tx * s, ty * s);
@@ -1394,14 +1406,40 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       ctx.restore();
     }
+    drawFoot(175, 295, -0.35, false);
+    drawFoot(322, 192,  0.35, true);
+    return c.toDataURL('image/png');
+  }
 
-    drawFoot(175, 295, -0.35, false);  // 왼발
-    drawFoot(322, 192,  0.35, true);   // 오른발 (좌우반전)
+  try {
+    const icon192 = drawIcon(192);
+    const icon512 = drawIcon(512);
 
-    document.getElementById('pwa-apple-icon').href = c.toDataURL('image/png');
-  } catch (e) { /* 캔버스 미지원 환경 무시 */ }
+    // iOS apple-touch-icon
+    document.getElementById('pwa-apple-icon').href = icon192;
 
-  // 3. 설치 배너 (Android)
+    // Android: PNG 아이콘이 담긴 manifest를 blob으로 교체 (설치 기준 충족)
+    const manifest = {
+      name: '랜덤 산책 미션 생성기',
+      short_name: '산책미션',
+      description: '산책을 게임으로 바꿔드려요. 미션을 완수하며 동네를 탐험하세요.',
+      start_url: './index.html',
+      scope: './',
+      display: 'standalone',
+      orientation: 'portrait',
+      background_color: '#F8F5F1',
+      theme_color: '#C96845',
+      lang: 'ko',
+      icons: [
+        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+    document.querySelector('link[rel="manifest"]').href = URL.createObjectURL(blob);
+  } catch (e) {}
+
+  // 3. Android 설치 버튼
   let deferredPrompt = null;
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
@@ -1415,8 +1453,16 @@ document.addEventListener('DOMContentLoaded', () => {
     deferredPrompt = null;
   });
   window.triggerInstall = () => {
-    if (deferredPrompt) { deferredPrompt.prompt(); }
+    if (deferredPrompt) deferredPrompt.prompt();
   };
+
+  // 4. iPhone 안내 배너 (iOS Safari + 아직 설치 안 된 경우)
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  if (isIOS && !isStandalone) {
+    const banner = document.getElementById('ios-install-banner');
+    if (banner) banner.style.display = 'flex';
+  }
 })();
 </script>
 </body>
