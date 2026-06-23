@@ -32,8 +32,8 @@ export default async function handler(req, res) {
   let cafes = [], restaurants = [];
   try {
     [cafes, restaurants] = await Promise.all([
-      kakaoSearch(location, 'CE7'),
-      kakaoSearch(location, 'FD6'),
+      kakaoSearch(location + ' 카페', 'CE7'),
+      kakaoSearch(location + ' 맛집', 'FD6'),
     ]);
   } catch (e) {
     return res.status(500).json({ error: '장소 검색 실패: ' + e.message });
