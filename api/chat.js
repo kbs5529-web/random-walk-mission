@@ -57,15 +57,25 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: `"${location}" 주변 장소를 찾지 못했어요. 다른 지역명을 입력해보세요.` });
   }
 
-  // 상호명 목록 포매팅
+  // 결과 섞기 (매번 다른 순서)
+  const shuffle = (arr) => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  // 상호명 목록 포매팅 (섞은 후 상위 8개)
   const formatList = (places) =>
-    places.slice(0, 8).map(p =>
+    shuffle(places).slice(0, 8).map(p =>
       `  - ${p.place_name} (${p.road_address_name || p.address_name})`
     ).join('\n');
 
   const placeBlock = [
-    cafes.length       ? `[카페 인기 TOP ${Math.min(cafes.length, 8)}]\n${formatList(cafes)}`       : '',
-    restaurants.length ? `[음식점 인기 TOP ${Math.min(restaurants.length, 8)}]\n${formatList(restaurants)}` : '',
+    cafes.length       ? `[카페]\n${formatList(cafes)}`       : '',
+    restaurants.length ? `[음식점]\n${formatList(restaurants)}` : '',
   ].filter(Boolean).join('\n\n');
 
   // GPT 미션 생성 (seed로 매번 다른 조합 유도)
