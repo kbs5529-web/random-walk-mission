@@ -456,11 +456,6 @@
       <input type="password" id="input-pin" placeholder="0000" maxlength="4" pattern="[0-9]*" inputmode="numeric">
       <p style="font-size:11px; color:var(--text-faint); margin-top:6px;">처음 입력한 PIN이 내 계정 비밀번호가 돼요</p>
     </div>
-    <div>
-      <label class="label">ChatGPT API 키 <span style="font-weight:500;text-transform:none;color:var(--text-faint)">(AI 미션용, 선택)</span></label>
-      <input type="text" id="input-apikey" placeholder="sk-...">
-      <p style="font-size:11px; color:var(--text-faint); margin-top:6px;">AI 미션을 사용하지 않으면 비워도 돼요</p>
-    </div>
     <button class="btn btn-primary" id="btn-start" onclick="handleWelcomeNext()">시작하기</button>
   </div>
 
@@ -947,7 +942,6 @@ async function handleWelcomeNext() {
       }
     }
     state.nickname = nick;
-    state.apiKey = document.getElementById('input-apikey').value.trim();
     showScreen('mode');
   } finally {
     btn.disabled = false;
@@ -1060,7 +1054,6 @@ function backFromDifficulty() {
 function handleMissionType(type) {
   state.missionType = type;
   if (type === 'ai') {
-    if (!state.apiKey) { alert('AI 미션을 사용하려면 처음 화면에서 ChatGPT API 키를 입력해주세요!'); return; }
     showScreen('ai-location');
   } else {
     generateMissions();
@@ -1073,40 +1066,23 @@ async function generateAIMissions() {
   const location = document.getElementById('input-location').value.trim();
   if (!location) { alert('위치를 입력해주세요!'); return; }
   const count = getMissionCount();
-  const modeNames = { general:'일반', couple:'커플', friend:'친구', family:'가족' };
   const btn = document.getElementById('btn-generate-ai');
   const loading = document.getElementById('ai-loading');
   btn.disabled = true; btn.style.display = 'none';
   loading.style.display = 'block';
-  const prompt = `당신은 재미있는 산책 미션 생성 전문가입니다.
-
-위치: ${location}
-모드: ${modeNames[state.walkMode]}
-미션 개수: ${count}개
-
-위 위치의 특성에 맞는, 실제로 그 동네에서 찾거나 할 수 있는 재미있는 산책 미션 ${count}개를 만들어주세요.
-이모지를 포함해 20자 이내로 작성하세요. 너무 어렵지 않게, 누구나 즐겁게 할 수 있는 미션이어야 합니다.
-
-반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
-{"missions": ["미션1", "미션2", ...]}`;
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + state.apiKey,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 600,
-        messages: [{ role: 'user', content: prompt }]
+        location,
+        difficulty: state.difficulty,
+        walkMode: state.walkMode
       })
     });
-    if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || res.statusText); }
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || res.statusText); }
     const data = await res.json();
-    const text = data.choices[0].message.content.trim();
-    const json = JSON.parse(text);
-    state.missions = json.missions.slice(0, count).map((t, i) => ({ id: i, text: t, completed: false, photoUrl: null }));
+    state.missions = data.missions.slice(0, count).map((t, i) => ({ id: i, text: t, completed: false, photoUrl: null }));
     startWalk();
   } catch (e) {
     alert('AI 미션 생성 실패: ' + e.message);
