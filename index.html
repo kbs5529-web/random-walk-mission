@@ -1077,7 +1077,8 @@ async function generateAIMissions() {
       body: JSON.stringify({
         location,
         difficulty: state.difficulty,
-        walkMode: state.walkMode
+        walkMode: state.walkMode,
+        seed: Date.now()
       })
     });
     if (!res.ok) { const err = await res.json(); throw new Error(err.error || res.statusText); }

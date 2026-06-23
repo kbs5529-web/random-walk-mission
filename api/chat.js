@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   if (!openaiKey) return res.status(500).json({ error: 'OpenAI API key not configured' });
   if (!kakaoKey)  return res.status(500).json({ error: 'Kakao API key not configured' });
 
-  const { location, difficulty } = req.body;
+  const { location, difficulty, seed } = req.body;
   if (!location) return res.status(400).json({ error: '위치를 입력해주세요' });
 
   const count = difficulty === 'easy' ? 3 : difficulty === 'hard' ? 10 : 5;
@@ -68,12 +68,14 @@ export default async function handler(req, res) {
     restaurants.length ? `[음식점 인기 TOP ${Math.min(restaurants.length, 8)}]\n${formatList(restaurants)}` : '',
   ].filter(Boolean).join('\n\n');
 
-  // GPT 미션 생성
+  // GPT 미션 생성 (seed로 매번 다른 조합 유도)
   const prompt = `아래는 카카오맵에서 "${location}" 인기 장소를 실제로 검색한 결과입니다.
+랜덤 시드: ${seed || Date.now()}
 
 ${placeBlock}
 
 이 목록에서 장소를 골라 방문 미션 ${count}개를 만드세요.
+매번 다른 장소 조합을 선택하고, 미션 내용도 다양하게 변형하세요 (먹기/마시기/즐기기/구경하기/인증샷 찍기 등).
 
 [절대 규칙]
 1. 반드시 위 목록의 정확한 상호명을 그대로 넣어야 합니다
@@ -94,7 +96,7 @@ ${placeBlock}
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.6,
+        temperature: 0.9,
         max_tokens: 600
       })
     });
